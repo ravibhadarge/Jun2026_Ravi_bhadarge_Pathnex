@@ -1,0 +1,21 @@
+------------- What I did Today ---------
+ 
+Learnt Services 
+3 types of Services , Cloud Provides ---- IaaS , PaaS , SaaS
+
+On Premise and Cloud Servers
+
+Resposibilities 
+Scaling -- Vertical --- Same resources Increase and Horizontal -- add new Instance 
+
+Remember Login Id and Region Always
+IAM -- User, Group , Roles , Policy 
+VPC , Subnet , Internet Gateway and NAT Gateway
+
+--------- Tomorrow Task  -------
+
+I will Learn 
+Networking Services 
+Computing Services 
+
+
