@@ -1,0 +1,38 @@
+--------- What I did Today -----------
+
+  class of AWS
+
+VPC Peering 
+Normal VPC Peering works on Mesh MOdel 
+
+vpc A vpc B vpc C ----   A-B , B-C , then a is connected to C , it will  have to connect A-C 
+
+
+Transit Gateway works on Hub and Spoke Model means 
+more than 10 vpc , when it needed 
+all VPCs are to connected to  single one which is in mid , then all are connected to each other automatically . 
+
+I learnt 4 wyas to connect EC2 
+ec2 instance --- directly connect to instance through browser , no need any other credentials
+Session Manager --- need role for ec2, policy ssmManagedInstance Core , attach this role to ec2 ,then reboot instance and connect 
+ssh-Client --- open  window terminal, cd Downloads , ssh-i "key.pem" userName@Ip , copy this  command from ssh-client option
+ ec2-serial console --- need userName Password , then connect 
+
+Route53
+IPs ----IPv4 ---total IP-- 2 power 32 --- 429 crores 49 lac 67296 and IPv6 ---- 2 power 128 -- 3.4* 10 power 38
+private IP range ---- 10.0.0.0, 172.16-31.0.0, 192.168.0.0 
+CIDR Value
+ Internet Gateway
+NAT Gateway
+DNS 
+Records --- A , AAAA, CNAME , NS , TXT, MX, TTL ,,
+ROUTING POLICIES -- Simple Routing, Weighted Routing , Latency Based , FAilover , GEolocation Based
+
+EKS, AUTOSCALING 
+LAMBDA 
+
+---------- Tomorrow Task ---------
+
+I will learn 
+SECURITY , MIGRATION , DATABASE, GLUE, BATCH , SNOWBALL Other Services 
+ 
