@@ -1,0 +1,43 @@
+-------- I Learn Today  AWS Service -----
+
+
+
+
+aws key management: manage encryption key for secure data within the asw
+support symmetric and asymmetric encryption key 
+integrate with aws service S3, RDS and EBS
+audit key uses via cloud trails for compliance
+AWS System Manager: automates operation task and manage aws infrastructure
+manage patching configure and resources compliance 
+automate routing administrator task deployment  
+provide centralized management with cloud watch and cloud trail
+help with security and compliance auditing 
+Amazon Rds: Manage relation database service for multiple database engine
+support sql server, MySQL PostgreSQL, MariaDB And oracle
+
+automates Backup patch management and failover
+offers encruption at rest and in transit for secure data management
+integrates with Cloud Watch for monitor and performance metrics
+
+amazon Aurora: high performance relation compatible with MySQL and PostgreSQL 
+Self healing storage and automated backup 
+fully manage with automatic patching and scaling
+Amazon DynamoDB: Manage NoSQl Database service for high-performance application
+provide fast low-latency read and write operation 
+automatically scale thoughtfut and starage
+integrate with lamda cloudWath And other AWS services
+Amazon redshift: manage the the data warehouse service for running complex queries 
+AWS DMS: helps migrate databases to AWS with minimal downtime
+Enables migration of on-premises databases to AWS
+AWS Batch:Efficiently runs batch processing workloads at scale
+AWS Glue:Managed ETL service for data preparation and loading.
+Amazon Elastic File System: scalable file storage service for EC2 instances and on-premises resources
+Supports NFS protocols for integration with on-premises environments
+Provides encryption at rest and in transit.
+Amazon CloudFront: Content delivery network for faster content delivery
+AWS Snowball: data transport solution for securely transferring large amounts of data to aws
+AWS CodePipeline: Continuous integration and delivery service for automated software
+workflows
+AWS CodeBuild: managed build service to compile source code and run tests
+AWS CodeDeploy: automates code deployment to ec2 instances and on-premises servers
+AWS X-Ray: Tracing service for debugging and analyzing microservices applications

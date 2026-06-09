@@ -1,0 +1,29 @@
+-------- what I Learn Today --------
+
+today i learnt some aws services
+session manager: it is user for secure shell access to the ec2 instance without needing the ssh / rdp
+not open the port its improve the security
+Route 53: it is Domain Name system servivce for route the traffice to the resorcess
+configure routing policy like simpe weighte geolocationand latency base
+cloud trail: monitor and record aws API call for auditing 
+track changes made to AWS resource and user activities
+cloud watch: Monitor and obsorv servives for aws resource
+collect log matrix and event from AWS resources
+Auto scalinfg: Automatically adjusts resource to meed demand
+Scale ec2 instance and other resources based on real-time need
+Lambda: it is serverless computing servise to run conde in response events
+no need to provision or manage server and support language jave Nodejs and python
+Aws Shield: it distributed Denial of Serivece for AWS service
+Help mitigate large-scale attack without accecting performance
+AWS WAF (Web Application Firewall):it protect the applicaion from common security thread
+protect against SQL injection and custimzable rule to filter malicious traffic
+Amazon GardDuty: detects the tread from aws envorment continue monitor AWS account for suspicious activity 
+help yhe identfiy unathorization access
+amazone inspecter: Atomated Velnerability maanagment service for aws workloads
+continue scan velnerablility and save from Exposue attcack
+
+
+
+----------  Tomorrow Task  --------
+
+Not decide yet
