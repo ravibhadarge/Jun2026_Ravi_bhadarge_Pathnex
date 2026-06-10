@@ -1,0 +1,48 @@
+---------    What I Learn Today  --------
+
+understand the docke consept
+what is Docker
+what is docker file 
+docker image 
+dokcer file  strucker--- 
+FROM 
+WORKDIR 
+COPY 
+RUN 
+EXPOSE 
+CMD
+ENTRYPOINT 
+
+set of insttruction to make DOCKERFILE
+-- DOCKER IMAGE read file template cantain code,library and setting
+ --- DOCKER CONTAINER created from image
+
+DOCKER DAEMON 
+DOCKER COMPOSE 
+DOCKER REGISTRY store the docker 
+DOCKER NETWORKING --- enable communation from host to container and 
+outside word 
+NETWORK TYPE --- BRIDGE, HOST, OVERLAY, NONE
+
+DOCKER VOLUME 
+DOCKER SWARM and K8S --- ORCHESTRATION TOOL 
+
+
+docker build -t image -f dockerfile .
+docker run -d -p 80:3000 --name cantainer 
+
+docker ps show the containe
+docker ps -a  show the all container
+docker images show the images
+docker rmi image  remove the image
+docker stop id  stop the conatiner id
+docker rm id/conatiner name  to remove the container 
+
+docker prune delate 
+
+
+
+
+---------   Tomorrow Task  -------
+
+K8s 
