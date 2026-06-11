@@ -1,0 +1,40 @@
+-----------    What I Learn Today -------
+
+Kubernetes iis ann open source orchaintratoion plataforn that used to automated deployment
+Architecture of k8s and component
+1. Master Node / Contron Plane
+manage the entire cluster 
+making the globle decigen about the cluster like scheduling, deciding whne and were to run the pod it mange the cluster desir state
+  
+2. Worker Node
+run the apllication workload 
+
+Components of Master Node 
+1. API SERVER it is entry point of all kubernate component 
+2. ETCD store the distributued key-value 
+3. SCHEDULAR assignt to the pod on node consider resourse requrement node affinity and anti-affinty
+4. CONTROLLER MANAGER run the controller desired cluster state
+TYPES OF CONTROLLER MANAGER 
+1. REPLICASET CONTROLLER 
+2. DEPLOYMENT CONTROLLER 
+3. JOB CONTROLLER 
+4. NODE CONTROLLER 
+
+Components of Worker Node
+1. KUBELET agent ruuning on each node ensure the container are running from api
+2. CONTAINER RUN TYPE responsible for running component it support support CRI-o and conainerd
+3. KUBE PROXY user for netorking implent service network mainten natwork rule like IP Table
+4. POD is smallest deployment unit it cantain one or more cantainer
+ 
+
+Node → Pod → Container
+
+A Node hosts one or more Pods, and each Pod contains one or more Containers.
+
+NAMESAPCE - distrubuted the resours to the cluster into isolate the envirment
+
+
+ 
+---------   Tomorrow Task   --------
+
+Practical all these things --- K8s
