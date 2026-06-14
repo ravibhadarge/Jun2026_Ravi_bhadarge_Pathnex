@@ -1,0 +1,124 @@
+
+- name: Setup Nginx with Reverse Proxy
+  hosts: all
+  become: yes
+  tasks:
+    - name: Install nginx
+      yum:
+        name: nginx
+        state: present
+    - name: Configure nginx as reverse proxy
+      template:
+        src: reverse-proxy.conf.j2
+        dest: /etc/nginx/conf.d/reverse-proxy.conf
+    - name: Restart nginx service
+      service:
+        name: nginx
+        state: restarted
+        enabled: yes
+
+
+
+
+
+
+
+resource "aws_s3_bucket" "ravi_bucket" {
+  bucket = "ravi-bucket"
+  versioning {
+    enabled = true
+  }
+
+  logging {
+    target_bucket = "pathnex-log-bucket"
+    target_prefix = "logs/"
+  }
+}
+
+
+
+
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: ravi-ingress
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+spec:
+  rules:
+    - host: ravi.local
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: ravi-service
+                port:
+                  number: 80
+
+
+
+
+
+pipeline {
+    agent any
+
+    environment {
+        IMAGE_NAME = 'ravi-web-app'
+    }
+
+    stages {
+
+        stage('Build') {
+            steps {
+                script {
+                    docker.build("${IMAGE_NAME}")
+                }
+            }
+        }
+
+        stage('Push') {
+            steps {
+                sh 'docker tag ravi-web-app username/ravi-web-app:latest'
+                sh 'docker push username/ravi-web-app:latest'
+            }
+        }
+
+        stage('Deploy') {
+            steps {
+                sh 'kubectl apply -f k8s/'
+            }
+        }
+    }
+}
+
+
+
+
+
+stages:
+  - build
+  - push
+  - deploy
+
+variables:
+  IMAGE_TAG: $CI_REGISTRY_IMAGE:$CI_COMMIT_SHA
+
+build:
+  stage: build
+  script:
+    - docker build -t $IMAGE_TAG .
+
+push:
+  stage: push
+  script:
+    - echo "$CI_REGISTRY_PASSWORD" | docker login $CI_REGISTRY -u "$CI_REGISTRY_USER" --password-stdin
+    - docker push $IMAGE_TAG
+
+deploy:
+  stage: deploy
+  script:
+    - helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
+    - helm repo update
+    - helm upgrade --install pathnex-nginx ingress-nginx/ingress-nginx
