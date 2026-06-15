@@ -1,0 +1,37 @@
+----------------    What I Learn Today   ----------
+
+deployment
+ deplyment is mage group of pad and control thier life cycle to ensure the desire
+number of pod are running at all time and automaitically replace fails pod
+deploment provide scaling rollout update and rollback
+
+replicaset
+ it ensureset ensure that a spacified number of pod replicas are running at any given time it work 
+alongside deployment to manage the svcalling and health check of appication
+ 
+statefulset  
+ is use to manage statfull application that require persistance storage like database 
+its ensure ordered deployment scaling and stable unique network identifire for each pod
+
+
+daemonset
+it ensure that particular pod is running on all node in the cluster its commonly
+ used for loggibng monitoring or networking agaent
+
+job and cronjob
+job is ensure that a specified number of pod successfully terminate useful for batch mangment
+
+cronjob run the job on schedule basic similar to linux
+ 
+
+Ingress
+
+it manage external access to service within the kubernate clucter typically HTTP or HTTPS
+it can prove ssl termination load balancing and name base virtual hostng
+
+i did the eks practicle
+
+i create the cluster and node
+install on local aws cli kubectl git and Kubectx
+
+
