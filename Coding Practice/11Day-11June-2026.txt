@@ -1,0 +1,118 @@
+---
+- name: Install Helm
+  hosts: all
+  become: true
+
+  tasks:
+    - name: Download Helm
+      ansible.builtin.get_url:
+        url: https://get.helm.sh/helm-v3.7.0-linux-amd64.tar.gz
+        dest: /tmp/helm.tar.gz
+        mode: "0644"
+
+    - name: Extract Helm archive
+      ansible.builtin.unarchive:
+        src: /tmp/helm.tar.gz
+        dest: /tmp
+        remote_src: true
+
+    - name: Install Helm binary
+      ansible.builtin.copy:
+        src: /tmp/linux-amd64/helm
+        dest: /usr/local/bin/helm
+        mode: "0755"
+        remote_src: true
+
+    - name: Verify Helm installation
+      ansible.builtin.command: helm version
+      register: helm_version
+      changed_when: false
+
+    - name: Show Helm version
+      ansible.builtin.debug:
+        var: helm_version.stdout
+
+
+resource "aws_instance" "pathnex_ec2" {
+  ami           = "ami-0abcd1234abcd1234"
+  instance_type = "t3.medium"
+
+  tags = {
+    Name = "Pathnex-EC2"
+  }
+}
+
+resource "aws_eip" "pathnex_eip" {
+  domain = "vpc"
+
+  tags = {
+    Name = "Pathnex-EIP"
+  }
+}
+
+resource "aws_eip_association" "pathnex_eip_assoc" {
+  instance_id   = aws_instance.pathnex_ec2.id
+  allocation_id = aws_eip.pathnex_eip.id
+}
+
+
+
+
+
+pipeline {
+    agent any
+
+    environment {
+        IMAGE_NAME = 'mydockerhubuser/pathnex-web-app'
+    }
+
+    stages {
+
+        stage('Checkout') {
+            steps {
+                git 'https://github.com/pathnex/sample-repo.git'
+            }
+        }
+
+        stage('Build Docker Image') {
+            steps {
+                script {
+                    docker.build("${IMAGE_NAME}:${BUILD_NUMBER}")
+                }
+            }
+        }
+
+        stage('Push Docker Image') {
+            steps {
+                script {
+                    docker.withRegistry(
+                        'https://docker.io',
+                        'docker-credentials'
+                    ) {
+                        def image = docker.image(
+                            "${IMAGE_NAME}:${BUILD_NUMBER}"
+                        )
+
+                        image.push("${BUILD_NUMBER}")
+                        image.push('latest')
+                    }
+                }
+            }
+        }
+
+        stage('Deploy to Kubernetes') {
+            steps {
+                sh """
+                kubectl set image deployment/pathnex-web \
+                web=${IMAGE_NAME}:${BUILD_NUMBER}
+                """
+            }
+        }
+
+        stage('Verify Deployment') {
+            steps {
+                sh 'kubectl rollout status deployment/pathnex-web'
+            }
+        }
+    }
+}
