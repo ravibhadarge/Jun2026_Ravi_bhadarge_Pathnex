@@ -1,0 +1,19 @@
+what I Learn Today 
+
+eksctl create cluster   --name ravi-cluster   --region us-east-1  --nodegroup-name ravi-nodes   --node-type c7i-flex.large 
+  --nodes 2   --nodes-min 1  --nodes-max 2   --managed
+
+curl -o kubectl https://amazonaws.com
+chmod +x ./kubectl
+sudo mv ./kubectl /usr/local/bin/
+
+
+
+curl "https://amazonaws.com" -o "awscliv2.zip"
+unzip awscliv2.zip
+sudo ./aws/install
+
+
+aws eks update-kubeconfig --region us-east-1 --name ravi-cluster
+
+kubectl get nodes
