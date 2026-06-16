@@ -1,0 +1,12 @@
+
+
+----------------    What I Learn Today   ----------
+services
+deployment.yaml
+statefulset.yaml
+daemonset.yaml
+job and cronjob
+ingress 
+config map and secret
+taint and tollence
+iffinity and ant effinity
