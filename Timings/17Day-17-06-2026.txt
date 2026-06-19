@@ -1,0 +1,16 @@
+----------------   What I Learn Today   ----------
+
+Helm is packege manager  
+Argo CD -----> Means Argo Continuous Delivery 
+Argo CD continuously monitors Git Repository and Sync changes to k8s Cluster.
+
+watch youtube video 2hrs
+practice dode 1hrs
+read note 2hrs
+
+
+
+
+--------     Tomorrow  Task --------
+ Terraform 
+
