@@ -1,0 +1,25 @@
+--------- What I Will Learn Today ----------
+i will create 2 machine using teraform master and node
+
+
+
+Ansible 
+create workspace good practices how to install and configure 
+ansible in workier node and make control node
+make targeted node
+create inventory file by taking ip and hostname make gruop DB 
+and give in ssh key file path and asking authonication set no
+add inbound rule for all worker machine ip to node machine
+and copy inventory file using SCP from local to jump server
+and also add my system ip to master machine inbount rule for access
+
+
+ 
+how to create playbook
+
+Learn Ci/Cd Pilpeline 
+install Jenkins through ansible
+run jenkins script 
+ansible and create pipeline 
+
+

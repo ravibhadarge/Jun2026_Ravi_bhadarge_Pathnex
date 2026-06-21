@@ -1,0 +1,124 @@
+--- 
+  - name: Backupand restore
+    hosts: all
+    become: yes
+    tasks: 
+      - name: create backup of /etc directory
+        command: tar -czvf /tmp/etc-backup.tar.gz /etc
+      - name: copy backup from remote server
+        copy: 
+           src: /tmp/etc-backup.tar.gz
+           dest: /tem/etc-backup.tar.gz /etc
+           copy:
+             src: /tmp/etc-backup.tar.gz
+             dest: /tmp/etc-backup.tar.gz
+       - name: Restore Backup frome remote server
+         command: tar -xzvf /tmp/etc-backup.tar.gz -C/
+
+
+resource "aws_s3_bucket" "ravi_bucket_us" {
+  bucket            = "ravi-backup-bucket_us"
+  region            = "us-east-1"
+
+   versioning {
+      enabled = true
+   }
+}
+  
+ 
+ 
+resource "aws_s3bucket_object" "ravi_backup_file" {
+  bucket         = aws_s3_bucket.ravi_bucket.bucket
+  key            = "backup.tar.gz"
+  source         = "ravi-backup.tar.gz"
+}
+
+
+apiVersion: apps/v1
+kind: StatefulSet
+metadate: 
+ name: ravi-staseful
+spec: 
+ serviceName: ravi
+ replicas: 3
+ selactor:
+  matchLabels:
+    app: ravi
+ template: 
+  metadata:
+   labels:
+      app: ravi
+  spac:
+    containers:
+      - name: nginx
+        image: nginx
+        volumeMount:
+           - mountPath: /usr/shhare/nginx/html
+             name: web-content
+  volumeClaimTemplates:
+  - metdata:
+      name: web-content
+    spec:
+     accessModes: ["ReadWriteOnce"] 
+     resource: 
+       requests: 
+          storage: 5Gi
+
+
+
+
+
+pipeline {
+     agent any
+     stages {
+       stage('Backup') {
+           steps { 
+               echo 'Backing up Jenkins Workspace...'
+               sh 'tar -czvf /tmp/jenkins-backup.tar.gz ${WORKSPACE}'
+            }
+           steps {
+                echo 'Restoring Jenkins Workspace..'
+                sh 'tar -xzvf /tmp/jenkins-backup.tar.gz -C ${WORKSPACE}'  
+
+          }
+       }
+    }
+ }           
+ 
+
+
+ 
+
+ 
+    
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
