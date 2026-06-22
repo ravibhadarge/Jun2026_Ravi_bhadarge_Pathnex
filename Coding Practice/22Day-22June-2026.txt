@@ -1,5 +1,5 @@
 ---
-   -name: Deply Nginx server acrossmutiple Kubernate clusters
+  - name: Deply Nginx server acrossmutiple Kubernate clusters
     hosts: all
     become: yes
     tasks:     
@@ -19,10 +19,9 @@
 
    vpc_config {
      subnet_ids      = [aws_subnet.ravi_subnet.id]
-     
+   
    }
-   depends_on        = [aws_iam_role_policy_attachment.eks_cluster_role_policy]
-  
+   depends_on        = [aws_iam_role_policy_attachment.eks_cluster_role_policy]  
  }  
 
  resource "google_container_cluster" "ravi_gke" {
