@@ -1,0 +1,197 @@
+---
+   -name: Deply Nginx server acrossmutiple Kubernate clusters
+    hosts: all
+    become: yes
+    tasks:     
+      - name: configure kubctl for clustrer 1
+        command: kubectl --context=us-east config is-context us-cluster
+      - name: Deploy nginx on cluster 1
+        command: kubectl apply -f kubernate/deployment.yml
+      - name: configure kubectl for cluster 2
+        command: kubectl --context=us-west config use-context us-west-cluster 
+      - name: Deploy nginx on cluster 2
+        command: kubectl apply -f kubernat/deployment.yml
+
+
+ resource "aws_esk_cluster" "ravi_eks" {
+   name              = "ravi-eks-cluster"
+   role_arn          = aws_iam_role.eks_cluster_role.arn
+
+   vpc_config {
+     subnet_ids      = [aws_subnet.ravi_subnet.id]
+     
+   }
+   depends_on        = [aws_iam_role_policy_attachment.eks_cluster_role_policy]
+  
+ }  
+
+ resource "google_container_cluster" "ravi_gke" {
+   name                 = "ravi-gke-cluster"
+   location             = "us-centrall-a"
+   initial_node_count   = 3
+   node _config {
+     machine_type       = "n1-standard-1"
+
+ }
+}
+
+
+
+apiVersion: apps/v1
+kind: Deployment
+metatadata: 
+namespace: ravi
+ name: zinghr-app
+spec:
+ replicas: 3
+ selector:
+  matchLabels:
+    app: zinghr-app
+ template: 
+  metadata:
+   labels:
+      app: zinghr-app
+  spec:
+   conatiners:
+    - name: ngnix
+      image: nginx
+      ports:
+        - containerPort: 80
+
+
+apiVerion: federation.k8s.io/v1betal
+kind: FaderatedDeployment
+metatdata:
+  name: ravi-faderated-deployment 
+  namespace: defualt
+spec:
+ template:
+   spec:
+     replicas:
+     selactor:
+       matchLabel:
+         app: ravi-app
+     template:
+       metadata: 
+        label:
+          app: ravi-app
+       spec:
+         containers:
+           - name: nginx
+             image: ngnix
+             ports:
+               - containersPorts: 80
+
+
+pipeline {
+  agent redhatsrv001
+  enviroment
+    stages {
+     stage('deploy to cluster') {
+      steps {
+        script {
+          sh 'kubectl --context=us-east-cluster apply -f kubernates/deployment.yml'  
+         }
+       }
+     }
+     stage('deployment to cluster 2') {
+      steps {
+         script 'kubectl --context=us-west-cluster apply -f kubernates/deployment.yml'
+       } 
+     }
+     stage(test) {
+      steps {
+       } 
+     }
+    stage(deploy) {
+      steps {
+       }
+     }
+   }
+ }
+
+
+
+
+stages: 
+ - deploy
+ 
+deply_cluser_1:
+  stage: deploy
+  script: 
+    - kubectle --context=us-east-cluster apply -f kubernates/deployment.yml
+
+deploy_cluster_2
+   stage: deploy
+   script: 
+    - kubectl --context=us-east-cluster apply -f kubernates/deployment.yml
+
+
+
+
+version: '3'
+services:
+  db:
+   image:mysql:8
+   container_name: ravi-db
+   enviroments:
+    MYSQL_ROOT_PASSWORD: root
+  web:
+   image: nginx
+   container_name: ravi-web
+
+  
+
+
+
+
+
+
+
+}
+
+ 
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 
+
+           
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
