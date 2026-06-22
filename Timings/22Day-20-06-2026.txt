@@ -1,0 +1,4 @@
+read the CICD note 2hrs 
+watch video 3 hrs
+code 1 hrs
+install jenkins in master and create pipeline with node
