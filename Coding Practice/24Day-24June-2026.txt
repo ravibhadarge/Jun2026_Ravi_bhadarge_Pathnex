@@ -1,0 +1,120 @@
+---
+   - name: Deploy The Docker container with Kubernate using Helm
+     host: all
+     tasks:
+         - name: install helm
+           command: curl https://raw.githubusercontent.com/helm/helm/master/script/get-helm-3 | bash
+         - name: Deploy the microservioce with helm
+           command: helm install ravi-app ./microservice-chart
+
+
+modul "ravi_vpc" {
+  source     = "./vpc"
+ }
+
+module "ravi_instance" {
+  source   = "./instance"
+  vpc_id   = module.ravi_vpc.vpc_id
+
+}
+
+output "instance_id" {
+ value   =module.ravi_instance.instance_id
+
+}
+
+
+apiVersion: v1
+kind: Deployment
+metadata:
+ name: ravi-deployments
+namespace: ravi
+spac:
+  replicas: 3
+  selector:
+   matcLabels:
+     app: ravi-app
+  template:
+   metadata:
+    labels:
+      app: ravi-app
+   spec:
+     containers:
+       - name: nginx
+         image: nginx
+         ports:
+           - conatainerPort: 80
+
+
+
+
+
+
+apiVersion: apps/v1
+kind: HorizontalPodAutoscaler
+metadata:
+namespace: ravi
+  name: ravi-app-hpa
+spac:
+ scaleTargateRef:
+   apiVersion: apps/v1
+   kind: Deployment
+   namespace: ravi
+   spac:
+     - name: ravi-app
+  minReplicas: 2
+  maxReplicas: 10
+
+
+
+
+
+
+pipeline  {
+  agent server001
+    stages {
+      stage('Scale Up') {
+         staps {
+           echo 'Scalling up Jenkins Pipeline agents for heavy workload...'
+            }
+           }
+       stage('Build') {
+          staps {
+            echo  'Building the project'
+
+             }
+
+           }
+       stage(''Deploy') {
+            stage {
+              echo 'Deploynig project..'
+      }
+    }
+  }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
