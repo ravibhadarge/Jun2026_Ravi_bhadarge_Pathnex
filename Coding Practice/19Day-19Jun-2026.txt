@@ -1,0 +1,180 @@
+---
+  - name: configure auto-healing dor web server
+    hosts: all
+    become: yes
+    tasks:  
+       - name: Ensure nginx service is running
+         service: 
+            name: nginx
+            state: started
+            enable: yes     
+        - name: setup auto resart for nginx service
+          lineinfile:
+            path: /etc/systemd/system/nginx.service.d/override.conf
+            line: "restart=always"
+            create: yes
+         - name: reload systemd
+           command: systemctl deamo-reload
+
+
+resource "azurerm_virtual_natwork" "main" {
+  name                           = "ravi-vnet"
+  location                       =  "East US"
+  address_space                  = ["10.0.0.0/16"]
+  resource_group_name            = azurerm_resource_group.main.name
+}
+
+
+
+
+
+resource "aws_instance" "ravi-ec2" {
+ ami                        = "ami-0abcd123acbd1234"
+ instance_type              = "t2.micro"
+ region                     = "ap-south-1"
+}
+
+resource "azurerm_linux_virtual_machine" "ravi_vm" {
+ name                        = "ravi-azure-vm"
+ resource_gruop_name         = azurerm_resource_group.main.name
+ location                    = azurerm_resource_gruop.main.location
+ size                        = "Standard_B1s"  
+ admin_username              = "azuruser"
+ admin_password              = "P@assword123"
+}
+
+apiVersion: apps/v1
+kind:Deployment
+metadata: 
+ name: ravi-wb-app
+spec: 
+  replicas: 3
+  selactor: 
+    matchLabels: 
+        app: ravi-wb-app
+  template:
+   metadata:
+     labels:
+        app: ravi-wb-app        
+    spec:
+      containers: 
+         - name: nginx
+           image: nginx
+           ports:  
+            - conatainerPort: 80
+           livenessProbe:
+             httpGet:
+               path: /healthz
+               port: 80
+             initialDelaySecond: 5
+             periodSecond: 10 
+           readinessProbe: 
+             httpGet: 
+               path: /healthz
+               port: 80
+            initialDelaySecond: 5
+            periodSecond: 10
+
+pipeline {
+  agent any
+  enviroment {
+    IMAGE_NAME = "ravi-web-app"
+  }
+  stages {
+    satge('build') {
+      steps {
+           echo 'Bulding Docker Image..'
+           docker.build('${env.IMAGE_NAME}')
+         }
+     }
+    stage('Deploy To Kubernates'){ 
+       steps {
+            script {
+              sh 'kubectl apply -f kubernate/deployment.yml'
+              sh 'kubectl rolluot status deployment/ravi-web-app'
+            }
+         } 
+      }  
+   }       
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      
+
+ 
+             
+
+
+
+
+            
+
+
+ 
+
+
+
+
+
+
+ 
+ 
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+             
+ 
+       
+
+
+
+
+
+
+
+
+

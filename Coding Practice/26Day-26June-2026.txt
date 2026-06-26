@@ -1,0 +1,111 @@
+---
+  - name: implement ssh key authontication
+    hosts: all
+    become: yes
+    tasks: 
+      -  name: genarate ssh key pair
+         command: ssh-keygen -t rsa -b 2048 -f /home/admin/.ssh/id_rsa -N"" 
+      -  name: Add ssh key publice key to authontication_key
+         authorized_key: 
+            user: admin
+            state: present
+            key: "{{ lookup('file', '/home/admin/.ssh/id_rsa.pub') }}"
+ 
+
+resource "aws_vpc_flow_log" "ravi_flow-log" {
+  log_group_name       = "ravi-flow-log"
+  vpc_id               = aws_vpc.pathnex_vpc.id
+  traffice_type        = "ALL"
+  log_destination-type = "cloud-watch-logs"
+ }
+
+ 
+apiVerion: apps/v1
+kind: NetworkPolicy
+metadata: 
+  name: ravi-web-app
+spac: 
+ podSelector:
+   matchLabels:
+     app: ravi-web-app
+ policyTypes:
+   - Ingesss
+   - Egress
+ ingress:
+   - form: 
+      - podSelector:
+          matchLabels:
+           apps: ravi-api
+ engess:
+   - to 
+      - podSelector:
+          matchLabel:
+            app: ravi-database
+
+
+pipeline {
+  agent server1
+  enviroment {
+     AWS_ACCESS_KEY_ID = credential('aws-access-key')
+     AWS_SECRET_ACCESS_KEY = credential(''aws-secret-key)
+
+  }
+  stages {
+    stage('Build') {
+       steps {
+           echo 'bulding docker image..'
+           docker.build('ravi-web-app')
+         }
+
+       }
+    stage('Build') {
+       steps { 
+           echo	'deploying to AWS EC2..' 
+           sh 'aws ec2 run-instance --image-id ami-0abcd1234 --count 1 --instance-type t2.micro''
+        }
+     }
+  }
+
+}
+
+stages:
+  - build
+  - deploy
+
+build:
+  stage: build
+  script:
+    - docker build -t pathnex-web-app .
+
+deploy:
+  stage: deploy
+  script:
+    - echo "Deploying with secure credentials"
+    - aws ec2 run-instances --image-id ami-0abcd1234 --count 1 --instance-type t2.micro --access-key $AWS_ACCESS_KEY --secret-key $AWS_SECRET_KEY
+
+
+docker logs ravi-nginx
+docker inspect ravi-nginx
+
+
+
+
+} 
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 
+
+

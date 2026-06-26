@@ -1,0 +1,66 @@
+---
+   - name: configure auto-healin for web server
+     hosts: all
+     become: yes
+     tasks:
+      - name: Ensure nginx service is running 
+        service:
+         name: ngnix
+         state: started
+         enabled: yes
+       - name: setup auto restart for nginx 
+         liniinfile:
+            path: /ete/systemd/system/nginx.service.d/override.conf
+            line: "Restart=always"
+            create: yes
+       - name: reload systemd
+         command: systemctl deamon-reload
+
+
+resource "azurerm_virtual_network" "main" {
+  name                 = "ravi-vnet"
+  location             = "East US"
+  address_space        = ["10.0.0.0/16]
+  resource_group_name  = azurerm_resource_gruop.main.name
+}
+
+resource "aws_instance" "ravi_ec2" {
+   ami             = "ami-0ancd123adcs"
+   instance_type   = "t2.micro" 
+   resion          =  "us-east-1a"
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                
+
+
+      
+
+
+
+
+
+
+

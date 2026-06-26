@@ -1,0 +1,15 @@
+----------------   What I Learn Today   ----------
+
+create terraform practical and create lock file in s3 dynamoDB lock
+create resource
+
+watch youtube video 4hrs ansible
+practice done 2hrs
+read note 2hrs
+
+
+
+
+--------     Tomorrow  Task --------
+ Terraform 
+
