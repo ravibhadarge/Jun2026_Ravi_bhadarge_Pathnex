@@ -1,0 +1,110 @@
+---
+  - name: Deply servweless lambda function
+    hosts: server1
+    become: yes
+    tasks: 
+     - name:  create lambda function
+       command: aws lambda create-function --function-name ravi-lambda --runtime nodejs14.x --role arn:aws:iam::1234567890:role/lamda-role --handler index.handler --zip-file fileb://lambda.zip
+       
+
+
+resource "aws-dynamodb_table" "ravi_table" {
+  name           = "ravi-table"
+  hash_key       = "id"
+  billing_mode   = "PAY_AS_REQUEST"
+  attribute {
+     name = "id"
+     type = "S"
+   }
+ }
+
+
+
+
+
+apiVerion: kubeless.io/v1betel1
+kind: Function
+metatdata: 
+ name: ravi-lambda
+ namespace: defualt
+spec:
+  runtime: nodejs14
+  handler: index.handler
+  function: |
+    module:.exports = function(event, context) {
+      contaext.succeed('Hellow World');
+    };
+
+
+
+
+pipleline {
+      agent server1
+      stages {
+        stage('Build')
+          steps {
+             echo 'Building lambda function packege...'
+             sh 'zip -r lambda.zip lambda/'
+            }
+         }
+         stage('Deploy to lambda')
+           steps {
+              script {
+                 sh 'aws lambda update-funcion-code --function-name ravi-lambda -zip-file fileb://lambda.zip'
+
+             }
+          }
+      }
+   }
+ }
+
+
+
+
+docker exec -it ravi-nginx bash
+docker stats 
+
+docker run -d --memory="512m" --cups="1.0" nginx
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
