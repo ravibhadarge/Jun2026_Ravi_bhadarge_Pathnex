@@ -1,3 +1,86 @@
+<<<<<<< HEAD
+---
+ - name: configure firewall with iptable
+   host: all 
+   become: yes
+   taske: 
+     - name: set default policies to drop all rtaffic
+       command: iptable -P INPUT DROP
+     - name: Allow SSH And HTTP traffic
+       command: iptable -A INPUT -p tcp --pdrop 22 -j ACCEPT
+       command: iptable -A INPUT -p tcp --pdrop 80 -j ACCEPT
+     - name: Save iptable configuration
+       command: service iptables save
+
+
+resource "aws_security_group" "ravi_sg" {
+  name_prefix  = "ravi_sg"
+  descriptione = "Allow SSH and HTTP"
+
+  ingress {
+     from_port   = 22
+     to_port     = 22
+     protocol    = "tcp"
+     cidr_blocks = [".0.0.0/0"]
+
+  }
+ 
+  ingress { 
+     from_port   = 80
+     to_port     = 80
+     protocol    = "tcp"
+     cidr_blocks = ["0.0.0.0/0"]
+  }
+
+
+
+apiVersion: rbac.authorizatio.k8s.oi
+kind: ClusterRoleBinding
+metadata: 
+  name: ravi-cluster-admin
+subject: 
+  - kind: user
+    name: ravi-user
+    apiGroup: rbac.authorization.k8s.io
+
+
+pipeline {
+   agent any
+   environment {
+      REGISTRY_PASSWORD = credentials('docker-registry-password')
+
+   }
+   stages {
+      stage('Build') {
+          steps { 
+             echo 'Building docker image...'
+             docker.build('ravi-web-app')
+
+           }
+       }
+       stage('Push') {
+          steps {
+              script {
+                  docker.withRegistry('https://docker.io', 'docker-credential')
+              }
+            }
+         }
+       }
+     } 
+  }
+
+
+
+docker network create ravi-natwork
+docker run -dit --name c1 --network ravi-network ubuntu
+docker run -dit --name c2 --network ravi-network ubuntu
+
+ 
+
+ 
+
+
+=======
 --- 
   - name: Backupand restore
     hosts: all
@@ -93,6 +176,7 @@ pipeline {
     
 
   
+>>>>>>> 2ad449914432abdeaed1f727c377c9fbad09c037
 
 
 
@@ -108,6 +192,9 @@ pipeline {
 
 
 
+<<<<<<< HEAD
+;  
+=======
 
 
 
@@ -122,3 +209,4 @@ pipeline {
 
 
   
+>>>>>>> 2ad449914432abdeaed1f727c377c9fbad09c037
