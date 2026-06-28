@@ -1,0 +1,55 @@
+---
+  - name: Setup VPC Peering Between Accounts
+    hosts: localhost
+    become: yes
+    tasks:
+    - name: create VPC peering connection
+      command: aws ec2 create-vpc-peering-connection --vpc-id vpc-123456789 --peer-vpc-id vpc-987654321
+
+
+
+
+resource "aws_vpc_peering_connection" "ravi_peering" {
+  vpc_id      = aws_vpc.ravi_vpc.id
+  peer_vpc_id = aws_vpc.peer_vpc.id
+}
+
+
+
+
+resource "aws_route" "ravi_route" {
+  route_table_id         = aws_route_table.ravi_rt.id
+  destination_cidr_block = "10.0.0.0/16"
+  vpc_peering_connection_id = aws_vpc_peering_connection.ravi_peering.id
+
+
+
+
+
+kind: NetworkPolicy
+metadata:
+  name: ravi-vpc-policy
+spec:
+  podSelector:
+    matchLabels:
+      app: ravi-app
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app: ravi-db
+
+
+
+
+docker save -o ravi-nginx.tar ravi-nginx
+
+docker load -i ravi-nginx.tar
+
+
+
+
+
+
+
+docker run --rm -v ravi-volume:/data -v $(pwd):/backup ubuntu tar czf /backup ravi-backup.tar.gz /data
