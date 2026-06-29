@@ -1,0 +1,191 @@
+---
+  - name: Setup the ha proxy
+    host: all
+    become: yesy
+    tasks:
+       - name: install HPProxy
+         yum:
+           name: haproxy
+           state: present
+       - name: configure HAProxy
+         template:
+           src: haproxy
+           state: present
+       - name: start HAProxy service
+           name: haproxy
+           state: started
+           enabled: yes
+     
+
+
+resorce "aws_lb" "ravi_lb" {
+   name                  = "ravi-lb"
+   internal              = false 
+   load_balancer_type    = "application"
+   security_group        = [aws_security_group.allow_subnet.public2.id]
+   launch_configuration  = aws_launch_configuration.pathnex_config.id
+
+}
+
+
+
+
+
+aipVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ravi-web-app
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: ravi-web-app
+  template:
+    metadata:
+       labels:
+          app: ravi-web-app
+    spec:
+       containers:
+           - name: nginx
+             image: nginx
+             ports:
+               - containerPort: 80
+
+
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+   name: 
+spec:
+   scalTargetRef:
+      apiVerion: apps/v1
+      kind: Deployment
+      name: pathnex-web-app
+    minReplicas: 2
+    maxReplicas: 5
+    targetCPUUtilizationPercentage: 80
+
+
+
+
+pipeline {
+      agent server02
+      stages {
+         stage('build') {
+            steps  {
+                  echo 'Building docker image'
+                  docker.build ('ravi-web-app')
+
+            }     
+          }
+          stage('test') {
+            steps  {
+                  echo 'running the test'
+            }
+          }
+          stage('Blue Green Deployment')
+             steps {
+                script  {
+                     sh 'kubectl apply -f kubernates/blue-deployment.yml'
+                     sh 'kubectl apply -f kubernates/green-deployment.yml'
+                     sh 'kubectl rollout status deployment/blue-deployment.yml'
+                     sh 'kubectl rollout status deployment/green-deployment'
+                  }
+              }
+          }
+       }
+   }
+                 
+
+
+
+
+
+
+
+
+stages:
+  - build 
+  - push   
+  - deploy
+ 
+
+build:
+   stage: build
+   script: 
+     - docker build -t ravi-web-app .
+      
+push:
+   stage:push
+   script:
+     - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWOORD"
+     - docker push ravi-web-app
+
+
+
+deploy
+  stage: deploy
+  script:
+     - kubectl apply -f kubernates/blue-deployment.yml
+     - kubectl apply -f kubernetes/green-deployment.yaml
+     - kubectl rollout status deployment/blue-deployment
+     - kubectl rollout status deployment/green-deployment
+   
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
