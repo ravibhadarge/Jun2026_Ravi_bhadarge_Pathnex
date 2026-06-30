@@ -1,0 +1,298 @@
+---
+  - name: setup docker container for multiple app
+    hosts: all
+    become:
+    tasks: 
+       - name: pull eweb app image
+         docker_image:
+           name: ravi-web-app
+           source: pull
+       - name: pull database app image
+         docker_image: 
+           name: ravi-database-image
+           source: pull
+       - name: run web app container
+         docker_container:
+            name: web-app  
+            image: my-web-app
+            state: started
+            publicshed_por:
+              -  "8080:80"
+       - name: run the database app container 
+         docker_container:
+            name: database-app
+            image: my-database-app
+            state: started
+            published_port:
+             - "3306:3306"
+
+
+
+resource "aws_vpc" "main" {
+  cidr_block         = ["10.0.0.0/16"]
+}
+
+resource "aws_subnet" "publice" {
+  vpc_id                   = aws_vpc.main.id
+  cidr_block               = ["10.0.1.0/24"]
+  availability_zone        = "us-east-1a"
+  map_public_ip_on_launch  = true 
+
+}
+
+resource "aws_subnet" "private" {
+  vpc_id                   = aws_vpc.main.id
+  cidr_block               = ["10.0.2.0/24"]
+  availability_zone        = "us_east-1b"
+
+
+
+       
+    
+
+
+
+apiVersion: aps/v1
+kind: StatefulSet
+metadata:
+  name: ravi-db
+spec:
+  serviceName: "ravi-db" 
+  replicas:
+  selector:
+     matchLabels:
+        app: ravi-db
+  template:
+    metadata: 
+       lebels:
+          app: ravi-db
+    spec:
+      containers:
+         - name: db
+           image: mysql:5:7
+           volumeMount:
+               - mountPath: /var/lib/mysql
+                 name: mysql-storage
+    volumeClaimTemplates:
+          - metadata: 
+              name: mysql-staorage
+            spec:
+              accessMode: ["ReadWriteOnce"]
+              resource:
+                requests:
+                   storage: 1Gi
+ 
+ 
+
+
+
+
+
+pipeline {
+   agent server001
+   environment {
+       IMAGE_NAME = "ravi-web-app"
+   }
+   stages {
+      stage('build docker image') {
+        steps { 
+          script        
+             docker.build("${env.IMAGE_NAME}")
+             }
+           }
+        }
+        stage('push the docker image')
+           steps {
+             scripts {
+                docker.withRegistry('https://docker.io', 'docker-credentials') {
+                   docker.image("${env.IMAGE_NAME}").push(latest')
+
+                  }
+               }
+          }
+      }
+  }
+
+
+
+
+
+
+
+
+
+stages: 
+  - build:
+  - push:
+  - deploy
+
+build:
+  stage: build
+  script: 
+   - docker build -t ravi-web-app .
+ 
+push:
+  stage: push
+  script: 
+    - docker login -u "$CI_REGISTRY_USER"  -p "$CI_REGISTRY_PASSWOR"
+    - docker push ravi-web-app
+ 
+deploy:
+  stage: deploy
+  script: 
+     - kubectl apply -f kubernates/deployment.yml
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
