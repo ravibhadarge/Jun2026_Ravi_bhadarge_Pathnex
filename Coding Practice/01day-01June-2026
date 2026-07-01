@@ -1,0 +1,147 @@
+L1
+
+---
+- name: install nginx on server
+  hosts: all
+  become: yes
+  tasks:
+    - name: install nginx on serve
+      yum: 
+        name: nginx
+        state: present
+ 
+
+
+provider "aws" {
+  region = "us-east-1"
+ }
+
+resource "aws_instance" "nginxec2"
+  ami             = "ami-0abcd12345abcd123"
+  instance_type   = "c5.xlarge"
+
+  tag    = {
+   name "nginx-EC2"
+   }
+}
+
+ 
+
+apiVerrion: v1
+pod: Pod
+metdata:
+  name: nginxpod
+spec: 
+  containers:
+    - name: web
+      image: nginx:latest
+      ports:
+        - containersPort: 80
+
+
+
+
+#!/bin/bash
+echo "Date: $(date)" 
+echo "hostname: $(hostname)"
+
+
+
+
+pipeline  {
+   agent nginx
+   stages {
+     stage('checkout')
+        step {
+           git branch: 'main', url: 'https://github.com/ravibhadarge/sample-java-app.git'
+         }
+      }
+      stage('List files')
+        steps {
+           sh 'ls -la'
+         }
+       }
+    }
+  }
+
+
+
+
+stages:
+  - checkout
+  
+git-checkout:
+  stage: checkout
+  stript: 
+   - git clone https://github.com/ravibhadarge/sample-java-app.git
+   - cd sample-java-app
+   - ls -la
+
+
+
+
+
+L2
+
+---
+- name: install nginx on nginx
+  hosts: nginx
+  hosts: webserver
+  tasks:
+    - name: install nginx
+      yum:
+        name: nginx
+        state: present
+
+
+docker --version
+docker run ubuntu echo "Hellow World"
+
+FROM ubuntu:22.4
+cmd ["echo", " hello ravi"] 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
