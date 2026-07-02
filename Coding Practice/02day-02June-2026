@@ -1,0 +1,270 @@
+L1
+
+---
+- name: install nginx on server
+  hosts: webserver
+  become: yes
+  tasks: 
+     - name: install nginx
+       yum: 
+        name: nginx
+        state: present
+     - name: enable nginx
+       service:  
+         name: nginx
+         state: started
+         enable: yes
+ 
+
+
+provider "aws" {
+  region = "us-east-1"
+ }
+
+resource "aws_instance" "nginxEC2" {
+   ami                  = "ami-abcd1234zbcd1234"
+   instance_type        = "r5.2xlarge"
+   
+   tag = {
+    Name                = "nginx-server"
+    Environment         = "Dev"
+    Owner               = "Devloper"
+  }
+}
+
+
+apiVerion: apps/v1
+kind: Deployment
+metadata: 
+ name: nginx-deployment
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+       app: nginx
+    spec:
+      containers: 
+         - name: nginx
+           image: nginx
+           ports:
+             - containerPort: 80
+
+
+
+#!/bin/bash
+df -h
+top
+du -sh
+free -m
+vmstat
+ps -aux
+netstat -tulnp
+
+
+
+pipeline {
+   agent nginxserver
+   tools {
+      maven 'Maven-3.8.1'
+      jdk 'JDK-17'
+   }
+   stages {
+       stage('ceckout')
+         steps {
+             git url: 'https://github.com/ravibhadarge/sample-java-app.git'
+         }
+       }
+       stage('compile')
+          steps {
+             sh 'mvn clean complie'
+         }
+       }
+       stage('test')
+          steps {
+             sh 'mvn test'
+         }
+       }
+       stage('packege')
+          steps {
+             sh 'mvn packege'     
+         }
+       }
+     }
+ }
+
+
+
+
+
+sgages: 
+   - build
+   - test
+   - package
+  
+  mevan-build:
+    stage: build
+    image: maven:3.8.2-jdk-17
+    script:
+       - git clone https://github.com/ravibhadrage/simple-java-app.git
+       - cd simple-java-app
+       - mvn clen complie
+  mevan-test:
+    stage: test
+    image: maven:3.8.2-jdk-17
+    script:
+      - cd sample-java-app
+      - mvn test
+  
+  maven-packege:
+     stage: packege
+     image: maven:3.8.2-jdk-17
+     script:
+        - cd sample-java-app
+        - mvn package
+=========================================================
+
+
+L2
+---
+- name: intall nginx
+  hosts: ngnix server
+  become: yes
+  tasks: 
+    - name: install nginx
+      yum: 
+       - name: nginx
+         state: present
+    - name: start the nginx service
+      service: 
+        - name: nginx
+          state: started
+          enabled: yes
+
+
+
+ 
+provider  "aws" { 
+   region = "us-east-1"
+ }
+  
+resource  "aws_instance" "nginxEC2" {
+   ami               = "1234abcd1234abcd"
+   instance_type     = "r5.xlarge"
+ 
+tag = {
+ Name         = "nginx-server"
+ Environment  = "test"
+ Owner        = "tester"
+    
+}
+
+
+ 
+apiVersion: apps/v1
+kind: Deployment
+metadata
+  name: deployment-nginx
+spec:
+  replicas: 3
+  selector:
+     matchLabels:
+         app: nginx-app
+   teplates:
+     metadata:
+       labels;
+          app: nginx
+      spac:
+        containers: 
+            - name: ngnix
+              image: nginx
+              ports:
+                - containersPors: 80
+
+
+#!/bin/bash
+df -h             #check th partion size
+top               #cpu utilization
+du -sh            #check the file size
+netstat -tulnp    #check the port is listening
+free -m           #check the memory
+ps -aux           #check the process
+jobs              #check the job status
+vmstat            #check the resource utilization
+ 
+
+
+
+docker pull ubuntu
+docker image
+docker ps -a
+
+
+
+
+FROM ubuntu:22.04
+Run apt update
+CMD ["echo","Hellow Worls"]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
