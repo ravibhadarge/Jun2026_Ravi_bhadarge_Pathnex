@@ -1,0 +1,319 @@
+L1
+
+---
+- name: create user ravi 
+  hosts: all
+  become: yes
+  tasks:
+    - name: create a user ravi.bhadarge
+      user: 
+       - name: ravi.bhadarge
+         shell: /bin/bash
+    
+
+
+provider  "aws" {
+  region = "us-south-1"
+}
+
+resource "aws_security_group" "raviSG" {
+  name               = "raviSG"
+  description        =  "ravi SG for SSH"
+   
+  ingress  {
+     from_port       = 22
+     to_port         = 22
+     protocol        = "tcp" 
+     cidr_block      = ["0.0.0.0/0"]
+   }
+}
+
+
+resource  "aws_instance" "raviEC2"
+  ami                    = "ami-abcd1234abcd12345"
+  instance_type          = "r61.4xlarge"
+  vpc_security_group_ids = [aws_security_group.raviSG.id]
+
+  tags = {
+   name= "ravi-EC2"
+  }
+}
+
+apiVersion:v1
+kind: Pod
+metadata:
+  name: nginx-pod
+spec: 
+  containers:
+    - name: nginx
+      image: nginx
+      env:
+        - name: APP_ENV
+          value: "production"
+
+
+#!/bin/bash
+FILE="/tmp/ravi.txt"
+
+if [ -f "$FILE" ]; then
+  echo "File exists"
+else
+  echo "File does not exists"
+
+
+pipeline { 
+    agent nginx
+    tools { 
+        nodejs 'NodeJS-16'
+    }
+    stages {
+       stage('checkout') {
+          steps {  
+               git url: 'https://github.com/ravibhdarge/sample-node-app.git'
+          }
+        }
+        stege('install dependency')
+          steps {
+                sh 'npm install'
+          }
+        }
+        stage('run')
+           steps {
+              sh 'run test'
+          }
+         }
+        stage('build')
+          steps {
+              sh 'nmp run build'
+
+          }
+      }  
+    }
+ }
+
+
+
+
+stages:
+   - install
+   - test
+   - build
+   
+ node-install:
+   stage: install
+   image: node:16
+   script:
+      - git clone https:github.com/ravibhadarge/sample-app.git
+      - cd sample-node-app
+      - npm install
+  
+  node-test:
+     stage: test
+     image: node:16
+     script:
+        - cd sapmle-node-app
+  
+ node-build
+    stage: build
+    image: node:16
+    script:
+       - cd sample-node-app
+       - npm run build
+
+
+=====================================================
+L2
+
+
+---
+- name: install apache and start serice
+  hosts: all
+  become: yes
+  tasks:
+    - name: install apache server
+      yum: 
+       - name: http
+         state: present
+    - name: started and enable the http
+      service: 
+        - name: started and enabled the http
+          state: started
+          enabed: yes 
+
+provider "aws"  {
+  region = "us-east-1"
+}  
+
+
+resource "aws_instance" "raviEC2" {
+   ami                = "abcd1234abcd12345"
+   instance_type      = "r5.4xlarge"
+   tags =  {
+      Name = "ravi-r5"
+  }
+}
+
+
+
+apiVersion: apps/v1
+kind: ReplicaSet
+metadata:
+  name: ravi-replicaset
+spec:
+  replicas: 5
+  selector: 
+    matchLabel:
+       app: ravi-app
+   template:
+     metadata:
+       labels:
+          app: ravi-app
+     spec:
+       containers:
+          - name: app
+            image: nginx
+            ports:
+              - containerPort: 80
+
+
+#!/bin/bash
+echo "Current user: $(whoami)"
+echo "Current user group: $(group)"
+
+
+
+
+
+
+
+FROM nginx:latest
+
+COPY index.html /usr/share/nginx/html/index.html 
+
+
+<h1> Hellow World </h1> 
+ 
+/user/share/nginx/html
+
+docker build -t ravi-nginx .
+ 
+docker run -d -p 80:80 ravi-ngnix
+   
+      
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
