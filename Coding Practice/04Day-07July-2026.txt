@@ -1,106 +1,203 @@
-Day 04 — Basic CI/CD Concepts with Jenkins & GitLab
+L1
 
 
-🔹 Jenkinsfile — Basic CI Pipeline
-pipeline {
-    agent any
-    stages {
-        stage('Build') {
-            steps {
-                echo 'Building project'
-            }
-        }
-        stage('Test') {
-            steps {
-                echo 'Running tests'
-            }
-        }
-        stage('Deploy') {
-            steps {
-                echo 'Deploying application'
-            }
-        }
-    }
+---
+- name: install package for production
+  hosts: all
+  become: yes
+  tasks: 
+     - name: install tool
+       yum:
+         name: 
+            - git
+            - wget
+         state: present
+
+
+provider  "aws"  {
+  region = "us-east-1"
+}
+
+resource "aws_key_pair" "raviKey"
+  key_name          = "raviKey"
+  public_key        = "ssh-rsa aaaaa....."
+}
+
+resource  "aws_instance" "raviEC2"
+  ami             = "abcd1234abcdhjkl"
+  public_key      = aws_key_pair.raviKey.key_name
+
+  tags =  {
+    Name = "dev-EC2"
+ }
+
+
+
+
+apiVerrion: v1 
+kind: Service
+metadata: 
+  name: backend-service
+spec:
+  selector:
+    app: backend-app
+  ports:
+    - port: 80
+      targetPort: 80
+
+
+
+pipeline  {
+    agent dev-server
+    stages  {
+       stage('parallel task') {
+          steps {
+               sh 'mvn clean compile'
+          }
+       }
+       stage('test') {
+          steps {
+               sh 'mvn test'
+          }
+       }
+   }
 }
 
 
-🔹 GitLab CI/CD — Basic Pipeline
+
+
+ 
+stages:
+  - build-test 
+
+meven-build:
+   stage: build-test
+   stage: meven:3.8.2-jdk-17
+   script:
+     - git clone https://github.com/ravibhadarge/sample-java-app.git
+     - cd sample-java-app
+     - mvn clean compile
+   parallel: 1
+ 
+maven-test:
+  stage: build-test
+  image: meven:3.8.2-jdk-17
+  script:
+    - cd sample-java-app
+    - mvn test
+  parallel: 1
+
+=============================================================
+L2
+
+
+
+pipeline  {
+   agent prod-server
+   stages {
+       stage('build')  {
+          steps  {
+             script
+              sh  'building th project'
+
+          }
+       }
+       stage('test')  {
+          steps  {
+             script  {
+                sh  'running the test'
+          }
+       }      
+       stage('deploy')
+          steps  {
+             script  {
+                 sh  'deploying the application'
+          }
+       }
+    }
+ }
+                 
+
+
+
+
 stages:
   - build
   - test
   - deploy
-
+ 
 build:
-  stage: build
-  script:
-    - echo "Building project"
-
+   stage: build
+   script:
+     - echo "building test"
 test:
-  stage: test
-  script:
-    - echo "Running tests"
+   stage: test
+   script:
+     - echo "running test"
 
 deploy:
-  stage: deploy
-  script:
-    - echo "Deploying application"
+   satge: deploy
+   script:
+     - echo "deploying the application"
 
-
-🔹 Ansible — Install and Configure Nginx
-- name: Install and configure Nginx
-  hosts: all
+---
+- name: install and configure the nginx and configuring the nginx
+  hosts: webserver
   become: yes
-  tasks:
-    - name: Install nginx
-      yum:
-        name: nginx
-        state: present
-    - name: Configure nginx
-      template:
-        src: nginx.conf.j2
-        dest: /etc/nginx/nginx.conf
-    - name: Start nginx service
-      service:
-        name: nginx
-        state: started
-        enabled: yes
+  tasks: 
+     - name: installing nginx
+       yum:
+         name: nginx
+         state: present
+     - name: configuring the nginx
+       service: 
+          name: ngnix
+          state: started
+          enabled: yesy
 
 
-🔹 Terraform — EC2 with Security Group
-resource "aws_security_group" "example" {
-  name        = "example_security_group"
-  description = "Allow SSH and HTTP"
+resource "aws_security_group" "prodSG" {
+  name               = "prodSG_security_group"
+  description        = "allow traffic on SSH and HTTPS"
   ingress {
-    from_port   = 22
-    to_port     = 22
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
+    from_port     = 22
+    to_port       = 22
+    protocol      = "tcp"
+    cidr_block    = ["203.0.113.0/24"] 
   }
-
-  ingress {
-    from_port   = 80
-    to_port     = 80
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
+  
+  ingress  {
+     from_port     = 443
+     to_port       = 443
+     protocol      = "tcp"
+     cidr_block    = ["0.0.0.0/0"]
   }
+  egress  {
+    from_port      = 0
+    to_port        = 0
+    protocol       = "-1"
+    cidr_block     = ["0.0.0.0/0"]
 
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
   }
 }
 
 
-🔹 Docker
-# Apache Container
-FROM ubuntu:22.04
+
+FROM ubunty:22.04
 RUN apt update && apt install apache2 -y
-RUN echo "Hello Pathnex" > /var/www/html/index.html
+RUN echo "Hellow Ravi" > /var/www/htam/index.html
 CMD ["apachectl", "-D", "FOREGROUND"]
 
-# Bash Real Path
-/var/www/html
+
+         
+
+
+
+
+
+
+
+
+
 
 
