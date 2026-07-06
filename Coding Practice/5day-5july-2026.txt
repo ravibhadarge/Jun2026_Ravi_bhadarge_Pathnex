@@ -1,0 +1,102 @@
+L1 General Purpose: m6a.4xlarge, m7i.2xlarge
+Memory-Optimized: r6i.2xlarge, r7a.2xlarge 
+
+
+---
+- name: mange nginx
+  hosts: all
+  become: all
+  tasks:
+    - name: update config file
+      copy:
+        src: index.html
+        dest: /usr/share/nginx/html/index.html
+      notify: restart nginx
+      
+  handlers:
+    - name: restart nginx
+      service: 
+        name: nginx
+        state: restarted
+
+resource "aws_instance" "uatEC2" {
+  ami                 = "ami-1234abjcejkjlkej"
+  instance_type       = "m6a.4xlarge"
+ 
+
+  user_data = <<EOF
+#!/bin/bash
+yum install -y httpd
+systemctl start httpd
+EOF
+
+  tags = {
+    Name = "uat-EC2"
+  }
+}
+
+
+apiVersion: v1
+kind: Pod
+metadata:
+  name: uat-limited-pod
+spec:
+  containers:
+    - name: app
+      image: ngnix
+      resource: 
+        limits:
+           memory: "256Mi"
+           cpu: "500m"
+
+
+
+pipeline  {
+    agent uat-server
+    environment  {
+         UAT_NAME = "UATSRV1"
+    }
+    stage  {
+       stage('print')  {
+           steps {
+                sh 'echo "UAT SERVER $UAT_NAME UAT software testing "'
+            }
+        }
+        stage('build') {
+            steps {
+                sh 'mvn clean package -uat.name=$UAT_NAME'
+            }
+        }
+    }
+}
+
+
+
+stages:
+  - build
+
+variables:
+  UAT_NAME: "UATSRV2"
+
+build:
+  stage: build
+  image: maven:3.8.1-jdk-17
+  script:
+    - git clone https://github.com/ravibhadarge/sample-java-app.git
+    - cd sample-java-app
+    - echo "UAT SERVER for $UAT_NAME UAT software testing"
+    - mvn clean package -Uat.name=$UAT_NAME
+    
+===================================================================
+
+
+
+
+
+
+
+
+
+
+
+
