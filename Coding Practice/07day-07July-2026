@@ -1,0 +1,160 @@
+---
+- name: install nginx
+  hosts: all
+  become: yes
+  tasks: install nginx
+    - name : install nginx
+      yum: 
+        name: install nginx
+        state: present
+     
+
+resource "aws_instance" "brokenEC2"
+  ami                    = "ami-abcd1234asdckmk"
+  instance_type          = "m6.xlarge"
+  tage = {
+    Name = "dev-EC2"
+  }
+}
+
+
+apiVersion: v1
+kind: Pod
+metatada:
+ name: dev-pod
+spec: 
+  containers:
+     - name: app
+       image: nginx
+
+
+pipeline  {
+    agent any
+    stages  {
+       stage('checkout')
+          steps  {
+             git url: 'https://githu.com/ravibhadarge/sample-java-app.git', 'branch main' 
+          }
+        } 
+        stage('build')
+       	  steps	 {
+       	     sh	mvn clean complie  || { echo "compile filed"; exit 1;}
+       	  }
+       	}
+        stage('test')
+       	  steps	 {
+       	     sh	mvn test || { echo "test failed"; exit 1; }
+       	  }
+       	}
+     }
+ }
+
+
+
+stages:
+  - build
+  - test
+
+build:
+  stage: build
+  image: maven:3.8.1-jdk-17
+  script:
+    - git clone https://github.com/ravibhadarge/sample-java-app.git
+    - cd sample-java-app
+    - mvn clean compile || { echo "Compile failed"; exit 1; }
+
+test:
+  stage: test
+  image: maven:3.8.1-jdk-17
+  script:
+    - cd sample-java-app
+    - mvn test || { echo "Tests failed"; exit 1; }
+
+======================================================================
+ L2
+ 
+---
+- name: install docker
+  hosts: all
+  become: yes
+  tasks:
+    - name: install docker
+      yum:
+        name: docker
+        state: present
+    - name: start and enable docker
+      service:       
+         name: docker
+         state: started
+         enable: yes
+
+resource "aws_vpc" "main" 
+  cidr_block    = ["10.0.0.0/16"]
+}
+
+resource "aws_instance" "dev-ec2" {
+   ami                = "ami-abdjkbcekjbkjw"
+   instance_type      = "c6g.4xlarge"
+   subnet_id          = aws_subnet.main.id
+   tags =  { 
+    Name  = "dev-ec2"
+  }
+}
+
+
+
+apiVersion: v1
+kind: Pod
+metadata:
+  name: dev-pod
+spec:
+  conainers:
+     - name: dev-app
+       image: nginx
+       volumeMount: 
+           - mointPath: /usr/share/ngonx
+             name: html-volume
+   volumes:
+      - name: html-volume
+        hostPath: 
+          path: /data
+          type: Directory
+
+
+
+#!/bin/bash
+services=("nginx" "docker" "httpd")
+for service in "${services[@]}"
+do
+  if systemctl is-active --quiet $srvice; then
+    echo "$service is running"
+  else "$service is not running"
+ fi
+done
+
+
+
+
+FROM node:18
+WORKDIR /opt/ravi/node-app
+COPY app.js opt/ravi/node-app
+CMD ["node", "/opt/ravi/node-app/app.js"]
+
+
+          
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
