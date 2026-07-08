@@ -1,0 +1,258 @@
+---
+- name: install nginx
+  hosts: webserver
+  become: yes
+  tasks:
+     - name: install nginx
+       yum:
+         name: nginx
+         state: present
+     - name: enable and started
+       service:
+         name: nginx
+         stage: started
+         enabled: yes
+
+
+resource "aws_instance" "nginxEC2" {
+  ami                    = "ami-anjkfcejfbjnfe"
+  instance_type          = "c7i.flex.4xlarge"
+  vpc_security_group_ids = [aws_security_group.nginx_sg.id]
+  tags =  {
+   Name = "nginx-ec2"
+  }
+}
+  
+resource "aws_vpc" "main" {
+  cidr_block = "10.0.0.0/16"
+
+  tags = {
+    Name = "main-vpc"
+  }
+}
+
+resource "aws_security_group" "nginx_sg" {
+  name        = "nginx-sg"
+  description = "Allow SSH and HTTP"
+  vpc_id      = aws_vpc.main.id
+
+  ingress {
+    description = "SSH"
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    description = "HTTP"
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  tags = {
+    Name = "nginx-sg"
+  }
+}
+
+
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx-deployment
+
+spec:
+  replicas: 2
+
+  selector:
+    matchLabels:
+      app: nginx
+
+  template:
+    metadata:
+      labels:
+        app: nginx
+
+    spec:
+      containers:
+        - name: nginx
+          image: nginx
+          ports:
+            - containerPort: 80
+
+
+
+#!/bin/bash
+echo "date"
+top
+
+
+
+pipeline  {
+    agent webserver
+    stages  {
+      
+        stage('checkout') {
+            steps {
+                git url: 'https://github.com/ravibhadarge/sample-java-app.git'
+            }
+         }
+         stage('deploy')
+             steps {
+                  sh 'echo "Deploying to $ENVIRONMENT by $INSTITUTE_NAME"'
+
+             }
+         }
+     }
+}
+
+
+tages:
+  - deploy
+
+variables:
+  INSTITUTE_NAME: "ravi"
+  ENVIRONMENT: "dev"
+
+deploy:
+  stage: deploy
+  image: alpine:latest
+  script:
+    - echo "Deploying to $ENVIRONMENT by $INSTITUTE_NAME"
+
+
+==============================================================
+
+
+L2
+
+---
+- name: install ngnix
+  hosts: webserver
+  become: yes
+  tasks:
+     - name: install nginx
+       yum: 
+         name: ngnix
+         state: presnt
+      - name:
+        copy:
+          src: nginx.conf
+          dest: /etc/ngnix/nginx.conf
+      - name: start and enable
+        service:
+          name: nginx
+          state: started
+          enabled: yes
+
+
+
+resource  "aws_iam_role" "ec2_role"
+  name                 = "ravi_ec2_role"
+  assume_role_policy   = jsonecode({
+      Version = "2012-10-17"
+      Statement = [
+         {
+           Action    = "sts:AssumeRole"
+           Effect    = "Allow"
+           Principle = { 
+              Service = "ec2.amazon.com"
+           }
+         }
+       ]
+    })
+  }
+
+
+
+resource  "aws_instance" "ravi-ec2"
+   ami              = "ami-hcnlskdmklmxqw"
+   instance_type    = "c7i-flex-4xlarge"
+   iam_instance_profile =aws_iam_role.ec2_role.name
+   tags =  {
+     Name = "ravi-ec2"
+  }
+}
+
+apiVrion: v1
+kind: ConfigMap
+metadata:
+  name: ravi-config
+spec:
+  name: ravi-config 
+data:
+  app.properties:  |
+    key=value
+
+
+apiVersion: v1
+kind: Secret
+metadata:
+  name: ravi-secret
+type: Opaque
+data:
+  password: Gjhjkhcjerjk=
+
+#!/bin/bash
+tar -cvf /var/log/archived_log.tar.gz /var/log/*.log
+
+
+class Hello {
+    public static void main(String[] args) {
+        system.out.println("hello ravi");
+    }
+}
+  
+
+FROM openjdk:21
+WORKDIR /opt/ravi/java-app
+COPY Hello.java /opt/ravi/java-app/
+RUN javac /opt/ravi/java-app/Hellow.java
+CMD ['java', "-cp", "/opt/ravi/java-app", "Hello"]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
+
+
+
+         
