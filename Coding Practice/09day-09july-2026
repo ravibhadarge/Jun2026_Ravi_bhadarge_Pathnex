@@ -1,0 +1,176 @@
+---
+- name: deploy teplate
+  hosts: prod-server
+  become: yes
+  tasks: 
+    - name: copy template file
+      template: 
+        src: ravi.conf.j2
+        dest: /etc/ravi.conf
+ 
+resource  "aws_internet_gateway"  "raviIGW"  {
+  vpc_id = aws_vpc.raviVPC.id
+  
+  tags = {
+   Name = "ravi-IGW"
+  }
+}
+
+
+
+apiVersion: v1
+kind: ConfigMap
+metadata: 
+  name: 
+data: 
+  APP_MODE: "production"
+  WELCOME_MSG: "Hello ravi"
+
+
+
+#!/bin/bash
+LOAD=$(uptime | awk '{print $10}')
+
+echo "current CPU Load: $LOAD"
+
+
+pipeline  {
+    agent server-dev
+    environment  {
+        INSTITUTTE_NAME = "ravi"
+    }
+    stages {
+        stage('checkout') {
+            steps {
+                git url: 'https://github.com/ravibhadarage/sample-java-app.git'
+            }
+        }
+        stage('build')
+            steps {
+                sh 'mvn clean packege'
+            }
+         }
+         stage('archive') {
+             steps {
+                archiveArtifacts artifacts: 'target/*.jar', fingerprint: true
+             }
+         }
+     }
+ }
+
+
+stages:
+  - build
+
+build:
+  stage: build
+  image: maven:3.8.1-jdk-21 
+
+  script:
+    - git clone https://github.com/ravi/sample-java-app.git
+    - cd sample-java-app
+    - mvn clean package 
+
+  artifacts:
+    paths: 
+      - target/*.jar
+    expire_in: 1 week
+
+
+
+===========================================================================
+
+L2
+
+---
+- name: setup docker for nginx
+  hosts: server-prod
+  become: yes
+  tasks:
+    - name: pull nginx image
+      docker_image:  
+         name: nginx
+         source: pull
+    - name: run the nginx container
+      docker_container:
+          name: nginx-container
+          image: nginx
+          state: started
+          published_ports:
+              - "8080:80"
+
+resource  "aws_launch_configuratoin" "example" {
+  name          = "example-config"
+  image_id      = "ami-0abcd2345abcd1234"
+  instance_type = "m7.4xlarge"
+}
+resource "aws_autoscaling_group" "prod-asg" {
+  desired_capacity           = 2
+  max_size                   = 3
+  min_size                   = 1
+  vpc_zone_identifier        = ["subnet-123456789" ]
+  launch_configuration       = aws_launch_configuration.prod-asg.id
+}
+
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name:  prod-deployment
+spec:
+  replicas: 1 
+  selector:
+    matchLabels:
+      app: ravi-app
+  template: 
+    spec: 
+      containers:
+        - name: nginx
+          image: nginx
+          ports: 
+            - containerPorts: 80
+
+---
+apiVersion: autoscaling/v2
+
+kind: HorizontalPodAutoscalar
+metadata: 
+  name: ravi-hpa
+spec:
+  scaleTargetRef
+    apiVersion: apps/v1
+    kind: Deployment
+    name: ravi-deployment
+  minReplicas: 1
+  maxReplicas: 5
+  targetCPUUtilazationPercentage: 50
+
+
+pipeline  {
+     agent dev-server
+     stages {
+         steps('deploy to kubernate')
+            steps {
+               script {
+                  sh 'kubectl apply -f deployment.yml'
+                }
+            }
+        }
+    }
+}  
+
+
+stages:
+  - deploy
+ 
+deploy:
+  stage: deploy
+  script:
+    - kubectl apply -f kubernates/deployment.yml
+
+
+
+
+
+
+
