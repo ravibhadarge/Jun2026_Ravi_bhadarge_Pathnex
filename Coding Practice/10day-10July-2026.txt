@@ -1,0 +1,254 @@
+---
+- name: install tool on os
+  hosts: all
+  become: yes
+  tasks:
+     - name: install htop
+       yum: 
+         name: htop
+         state: present
+        when: ansible_facts['os_family'] == "RedHat"
+        
+        
+resource "aws_route_table" "raviRT" {
+  vpc_id = aws_vpc.raviVPC.id
+  
+  route {
+    cidr_block = "0.0.0.0/0"
+    gateway_id =aws_internet_gateway.raviISG.id
+    }
+    tags = {
+     Name = "ravi-routetable"
+     }
+   }
+   
+ resource "aws_route_table_association" "raviRTA"
+    subnet_id                   = aws_subnet.ravi.subnet.id
+    route_table_id              = aws_route_table.raviRT.id
+  }
+  
+ 
+ apiVersion: v1
+ kind: Secret
+ metadata: 
+   name:
+ spec: Opaque
+ data:
+   password: cGF0aG5leDEyMw
+ 
+ 
+ 
+ echo i in {1..10}; do
+    echo "number: $i"
+   done
+   
+   
+ pipeline  {
+      agent server1
+          stages  {
+              stage('checkout') {
+                 steps {
+                    git url: 'https//github.com/ravibhadarge/ravi-jav.app'
+                  }
+                }
+                stage('build') {
+                  steps  {
+                     sh
+                     '''
+                     if [-d ".m2"]; then
+                        echo 'using cache dependancies'
+                     else
+                        mvn clean compile
+                     fi
+                     '''
+                    }
+                }
+           }
+      }
+      
+      
+      
+stages:
+- build
+
+build:
+  stage: build
+  image: maven:3.8.1-jdk-21
+  cache:
+    key: maven-cache
+    paths:
+      - .m2/repository
+  script:
+    - git clone https://github.com/ravibhadarge/sample-java-app.git
+    - cd sample-java-app
+    - mvn clean compile
+ ==============================================================================
+ L2
+ 
+ ---
+ - name: settup docker container for multiple app
+   hosts: dev-server
+   become: yes
+   tasks:
+     - name: pull web app
+       docker_image:
+         name: web-app
+         source: pull
+         
+     - name: pull database
+       docker_image:
+         name: sql-db
+         source: pull
+  
+     - name: run database app container
+        docker_container:
+          name: database-app
+          image: sql-db
+          state: started
+          published_ports:
+             - "3306:3306"
+             
+
+resource  "aws_vpc" "main"
+  cidr_block    = "10.0.0.0/16"
+}  
+  
+  
+  
+resource "aws_subnet" "public" {
+  vpc_id                = aws_vpc.main.id
+  cidr_block            = "10.0.1.0/24"
+  availability_zone     = "us-east-1a"
+ }
+ 
+ resource  "aws_subnet"  "private"
+   vpc_id               = aws_vpc.main.id
+   cidr_block           = "10.0.2.0/24"
+   availability_zone    = "us-east-1b"
+ }
+ 
+ 
+ apiVersion: apps/v1
+ kind: StatefulSet
+ metadata:
+   name: ravi-db
+ spec: 
+   serviceName: "ravi-db"
+   replicas: 3
+   selactor:
+      matchLabels:
+        app: ravi-db 
+    template: 
+      metadata:
+         labels:
+           app: ravi-db
+      spec: 
+         containers:
+            - name: db
+              image: mysql:5.7
+              volumeMount: 
+                 - mountPath: /var/lib/mysql
+                   name: mysql-storage
+   volumeClaimTemplate:
+      - metadata:
+           name: mysql-storage
+        spec:
+          accessModes: ["ReadWriteOnce"]
+          resource:
+            requests:
+              storage: 1Gi
+              
+ 
+ 
+ pipeline  {
+     agent server002
+      enviroment {
+         IMAGE_NAME = "ravi-web-app"
+         
+       }
+       stage  {
+          stage ('build')
+            script {
+                    docker.build("${env.IMAGE_NAME}")
+                }
+            }
+         }
+         stage('push Docker Image') {
+            steps {
+                script {
+                    docker.withRegistry('https://docker.io', 'docker-credentials') {
+                        docker.image("${env.IMAGE_NAME}").push('latest')
+                    }
+                }
+            }
+        }
+        stage('deploy to K8s') {
+            steps {
+                script {
+                    sh 'kubectl apply -f deployment.yml'
+                }
+            }
+        }
+    }
+}
+        
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+stages:
+  - build
+  - push 
+  - deploy
+  
+build:
+   stage: build
+   script: 
+      - docker build -t ravi-web-app .
+push:
+   stage: push
+   script: 
+      - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD"
+      - docker push ravi-web-app
+deploy:
+    stage:
+       script:
+          - kubectl apply -f kubernates/deployment.yml
+          
+ 
+ 
+             
+ FROM ubuntu:22.04
+ WORKDIR /opt/ravi/devops-project
+ COPY . /opt/ravi/devops-project
+ CMD ["ls", "-l", "/opt/ravi/devops-project"]
+ 
+ 
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
