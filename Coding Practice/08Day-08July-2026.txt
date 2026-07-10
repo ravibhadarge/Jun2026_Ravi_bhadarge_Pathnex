@@ -1,0 +1,166 @@
+---
+- name: install package for dev using variable
+  hosts: dev-server
+  become: all
+  tasks:
+    - name: 
+      vars:
+        dev-server_packeges:
+           - tree
+           - unzip
+           - vim
+        tasks:
+          - name: install require packeges
+            yum:
+              name: "{{dev-server_packeges}}" 
+              state: present
+ 
+# 1. AWS Provider Configuration
+provider  "aws" {
+  region = "us-east-1"
+}
+resource "aws_subnet" "devsubnet"
+  vpc_id                  = aws_cpc.devVPC.id
+  cidr_block              = ["10.10.1.0/24"]
+  map_pub;ic_ip_on_launch = true
+  tags =  {
+   Nmae = "dev-subnet"
+  }
+}
+
+#2. Azure
+provider "asurerm"  {
+  features  {}
+}
+resource "azurerm_resource_group" "dev"  {
+  name             = "dev-VNet"
+  location         = "East US"
+} 
+
+resource "azurerm_virtual_network"
+  name                   = "dev-VNet"
+  address_space          = ["10.10.1.0/16"]
+  location               = azurerm_resource_group.dev.location
+  resouurce_group_name   = azurerm_resource_group.dev.name
+}
+
+resource  "azurerm_subnet"  "devsubnet"  {
+  name                           = "dev-subnet"
+  resource_group_name            = azurerm_resource_group.dev.name
+  virtual_network_name           = azurerm_virtual_network.devVNet.name
+  address_prefixes               = ["10.10.1.0/24"]
+}  
+
+
+3.google
+resource  "google_compute_subnetwork" "devsubnet"  {
+  name                   = "dev-subnet"
+  ip_cidr_range          = "10.10.1.0/24"
+  region                 = "us-east1"
+  network                = "google_compute_network.devvpc.id"
+}
+
+
+apiVersion: v1
+kind: Pod
+metadata:
+  name: app
+spec:
+  containers:
+    - name: web
+      image: nginx
+      ports:
+        - containerPort: 8080
+      startupProbe:
+        httpGet:
+          path: /startup
+          port: 8080
+        failureThreshold: 30
+        periodSeconds: 10
+      livenessProbe:
+        httpGet:
+          path: /health
+          port: 8080
+        initialDelaySeconds: 15
+        periodSeconds: 20
+        failureThreshold: 3
+      readinessProbe:
+        httpGet:
+          path: /ready
+          port: 8080
+        initialDelaySeconds: 5
+        periodSeconds: 10
+        failureThreshold: 2
+
+
+done
+    }
+    stages {
+        stage('Checkout') {
+            steps {
+                git branch: 'main', url: 'https://github.com/Pathnex/sample-java-app.git'
+            }
+        }
+        stage('Build') {
+            when {
+                branch 'main'
+            }
+            steps {
+                sh 'mvn clean compile'
+            }
+        }
+        stage('Deploy') {
+            when {
+                expression { params.ENVIRONMENT == 'dev' }
+            }
+            steps {
+                sh 'echo "Deploying to $ENVIRONMENT by $INSTITUTE_NAME"'
+            }
+        }
+    }
+}
+
+
+
+
+stages:
+  - build
+  - deploy
+
+build:
+  stage: build
+  image: maven:3.8.1-jdk-17
+
+deploy:
+  stage: deploy
+
+
+
+
+
+
+   image: alpine:latest
+  script:
+    - echo "Deploying to $CI_ENVIRONMENT_NAME by ravi"
+  only:
+    variables:
+      - $CI_ENVIRONMENT_NAME == "dev"
+  script:
+  only:
+    - main
+    - git clone https://github.com/ravibhadarge/sample-java-app.git
+    - cd sample-java-app
+    - mvn clean compile
+    }
+    environment {
+        INSTITUTE_NAME = "ravi"
+
+
+pipeline  {
+    agent serverprod  {
+    parameter  {
+       string (name: 'ENVIROMENT', defaultValue: 'dev', description: 'Deployment Environment')
+#!/bin/bash
+for item in dev devops developing: do
+  echo "Item: $item"
+
