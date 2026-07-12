@@ -1,0 +1,157 @@
+L1
+
+---
+- name: create config file for ravi
+  hosts: all
+  become: yes
+  tasks:
+    - name: write content to file
+      copy:
+        dest: /etc/ravi.conf
+        content: |
+          welcome to ravi DevOps Training
+          today is Day 12
+
+
+resource "aws_db_instance" "raviRDS" {
+  allocated_storage      = 200
+  engine                 = "mysql"
+  instance_class         = "db.r7g.large"
+  name                   = "ravidb"
+  username               = "admin"
+  password               = "password123"
+  skip_final_snapshot    = true
+}
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ravi-rolling
+spec:
+  replicas: 3
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 1
+  selector:
+    matchLabels:
+      app: roll
+  template:
+    metadata:
+      labels:
+        app: roll
+    spec:
+      containers:
+        - name: web
+          image: nginx
+================================================================================================
+L2
+
+
+---
+- name: install Helm
+  hosts: all
+  become: yes
+  tasks:
+    - name: download Helm
+      get_url:
+        url: https://get.helm.sh/helm-v3.7.0-linux-amd64.tar.gz
+        dest: /tmp/helm.tar.gz
+
+    - name: Extract Helm
+      unarchive:
+        src: /tmp/helm.tar.gz
+        dest: /usr/local/bin/
+        remote_src: yes
+
+    - name: Set Helm binary permissions
+      file:
+        path: /usr/local/bin/helm
+        mode: '0755'
+
+
+resource "aws_eip" "ravi_eip" {
+  instance = aws_instance.ravi_ec2.id
+}
+
+resource "aws_instance" "ravi_ec2" {
+  ami           = "ami-0abcdhgsdb1234"
+  instance_type = "c7g.xlarge"
+  
+  tags = {
+    Name = "ravi-EC2"
+  }
+}
+
+
+
+pipeline {
+    agent any
+    environment {
+        IMAGE_NAME = 'java-web-app'
+    }
+    stages {
+        stage('checkout') {
+            steps {
+                git 'https://github.com/ravibhadarge/sample-repo.git'
+            }
+        }
+        stage('build docker image') {
+            steps {
+                script {
+                    docker.build("${env.IMAGE_NAME}")
+                }
+            }
+        }
+        stage('push docker image') {
+            steps {
+                script {
+                    docker.withRegistry('https://docker.io', 'docker-credentials') {
+                        docker.image("${env.IMAGE_NAME}").push('latest')
+                    }
+                }
+        }
+        stage('deploy to kubernetes') {
+           steps {
+               script {
+                  sh 'kubectl apply -f deployment.yaml'
+
+                }
+            }
+        }
+    }
+}
+
+
+
+
+
+stages:
+  - build
+  - push
+  - deploy
+
+build:
+  stage: build
+  script:
+    - docker build -t ravi-web-app .
+
+push:
+  stage: push
+  script:
+    - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD"
+    - docker push ravi-web-app
+
+deploy:
+  stage: deploy
+  script:
+    - helm repo add stable https://charts.helm.sh/stable
+    - helm install ravi-nginx stable/nginx-ingress
+
+
+
+FROM nginx
+EXPOSE 80
+docker run -d -p 8080:80 nginx
+
