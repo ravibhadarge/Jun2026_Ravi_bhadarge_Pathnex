@@ -1,0 +1,262 @@
+---
+- name: install java and set java_home
+  hosts: server1
+  become: yes
+  tasks:
+    - name: install java
+      yum: 
+       name: java-21-open-jdk
+       state: present
+    - name: set java_home
+      linineinfile:
+        path: /etc/profile
+        line: 'export JAVA_HOME=/usr/lib/jvm/java-21-openjdk'
+
+
+provider "aws" {
+  region = "us-east-1"
+}
+ 
+resource "aws_s3_bucket" "ravibucket"
+  bucket = "ravi-devops-bucket"
+  tage = {
+   Name = "ravibucket"
+  }
+}
+
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: ravi-cron
+spec: 
+  schedule: "*/5 * * * *"
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+            - name: job
+              image: busybox
+              command: ["sh", "-c", "echo Pathnex CronJob running"]
+          restartPolicy: OnFailure
+FILE="/etc/passwd"
+
+while read line; do
+  echo "Line: $line"
+done < $FILE
+
+
+
+pipeline {
+    agent any
+    environment {
+        INSTITUTE_NAME = "ravi"
+        SLACK_CHANNEL = "#devops"
+    }
+    stages {
+        stage('Checkout') {
+            steps {
+                git url: 'https://github.com/ravibhadarge/sample-java-app.git'
+            }
+        }
+        stage('Build') {
+            steps {
+                sh 'mvn clean package'
+            }
+        }
+    }
+    post {
+        success {
+            slackSend(channel: "$SLACK_CHANNEL", message: "SUCCESS: $INSTITUTE_NAME Build #${env.BUILD_NUMBER}")
+        }
+        failure {
+            slackSend(channel: "$SLACK_CHANNEL", message: "FAILURE: $INSTITUTE_NAME Build #${env.BUILD_NUMBER}")
+        }
+    }
+}
+
+
+
+stages:
+  - build
+
+variables:
+  INSTITUTE_NAME: "ravi"
+  SLACK_WEBHOOK: "https://hooks.slack.com/services/XXXXX/YYYYY/ZZZZZ"
+
+build:
+  stage: build
+  image: maven:3.8.1-jdk-21
+  script:
+    - git clone https://github.com/Pathnex/sample-java-app.git
+    - cd sample-java-app
+    - mvn clean package
+    - curl -X POST -H 'Content-type: application/json' --data '{"text":"Build success for ravi"}' $SLACK_WEBHOOK
+
+- name: Deploy web application to multiple hosts
+  hosts: all
+  become: yes
+  tasks:
+    - name: Copy web app files
+      copy:
+        src: /path/to/web/app/
+        dest: /var/www/html/
+    - name: Start web app service
+      service:
+        name: apache2
+        state: started
+        enabled: yes
+
+
+---
+- name: deploy web application to multiple hosts
+  hosts: all
+  become: yes
+  tasks:
+    - name: Copy web app files
+      copy:
+        src: /web/app/
+        dest: /var/www/html/
+    - name: Start web app service
+      service:
+        name: apache2
+        state: started
+        enabled: yes
+
+
+resource "aws_lb" "ravi_lb" {
+  name               = "ravi-lb"
+  internal           = false
+  load_balancer_type = "application"
+  security_groups    = [aws_security_group.allow_ssh_http.id]
+  subnets            = [aws_subnet.public.id]
+}
+
+resource "aws_instance" "ravi_ec2" {
+  ami             = "ami-abcd1234adcshdf"
+  instance_type   = "m6i.large"
+  security_groups = [aws_security_group.allow_ssh_http.name]
+
+  tags = {
+    Name = "ravi-EC2"
+  }
+}
+
+
+pipeline {
+    agent server
+    environment {
+        IMAGE_NAME = 'ravi-web-app'
+        DEPLOY_ENV = 'production'
+    }
+    stages {
+        stage('build') {
+            steps {
+                echo 'building docker image...'
+                docker.build("${env.IMAGE_NAME}")
+            }
+        }
+
+        stage('test') {
+            steps {
+                echo 'running tests...'
+            }
+        }
+        stage('deploy to kubernetes') {
+            steps {
+               script {
+                  if (env.DEPLOY_ENV == 'production') {
+                       sh 'kubectl apply -f kubernetes/prod-deployment.yaml'
+                   } else {
+                       sh 'kubectl apply -f kubernetes/dev-deployment.yaml'
+                   }
+         stage('deploy to kubernetes') {
+            steps {
+                script {
+                    if (env.DEPLOY_ENV == 'production') {
+                        sh 'kubectl apply -f kubernetes/prod-deployment.yaml'
+                    } else {
+                        sh 'kubectl apply -f kubernetes/dev-deployment.yaml'
+                    }
+
+                }
+
+           }
+
+       }
+   }
+}
+
+
+
+
+
+stages:
+  - build
+  - push
+  - deploy
+
+build:
+  stage: build
+  script:
+    - docker build -t ravi-web-app .
+
+push:
+  stage: push
+  script:
+    - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD"
+    - docker push ravi-web-app
+
+deploy:
+  stage: deploy
+  script:
+    - |
+      if [ "$CI_COMMIT_REF_NAME" == "main" ]; then
+        kubectl apply -f kubernetes/prod-deployment.yaml
+      else
+        kubectl apply -f kubernetes/dev-deployment.yaml
+      fi
+
+
+
+
+
+FROM ubuntu
+RUN apt update && apt install curl -y && apt install vim -y
+CMD ["echo", "Hello Pathnex"]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
