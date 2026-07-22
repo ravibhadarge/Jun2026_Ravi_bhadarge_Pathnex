@@ -1,0 +1,161 @@
+---
+- name: create multiple user
+  hosts: webserver
+  become: yes
+  tasks: 
+    vars:
+      users:
+       - dev1
+       - dev2
+       - dev3
+    tasks:
+      - name: create user
+        user:
+          name: "{{ item }}"
+          state: present
+        loop: "{{ user }}"
+
+
+     
+resource "aws_lb" "raviALB" {
+  name               = "ravi-alb"
+  load_balancer_type = "application"
+  subnet             = [aws_subnet.ravisubnet.id]
+  tags = {
+    Name = "ravi-alb"
+  }
+}
+
+
+
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: ravi-namespace
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ravi-deploy
+  namespace: ravi-namespace
+spec:
+  replicas: 2
+  selector: 
+    matchLabels:
+      app: ravi
+  template: 
+    metadata: 
+      label:
+    spec:
+      containers:
+        - name: app
+          image: nginx
+
+
+
+#!/bin/bash
+
+ps aux --sort=-%mem | head -n 6
+
+
+
+pipeline { 
+    agent server001
+    parameters {
+        choice(name: 'ENVIRONMENT', choiced: ['dev', 'staging', 'prod'], description: 'deployment environment')
+    }
+    environment {
+        INSTUTUTE_NAME = "ravi"
+    }
+    stages {
+       stage('deploy') { 
+          steps {
+              sh 'echo "deploying $INSTITUTE_NAME application to $ENVIRONMENT"'
+
+          }
+       }
+   }
+}
+
+
+
+stages:
+  - deploy
+
+variables:
+  INSTITUTE_NAME: "ravi"
+  ENVIRONMENT: "staging"
+
+deploy:
+  stage: deploy
+  image: alpine:latest
+  script:
+    - echo "Deploying $INSTITUTE_NAME application to $ENVIRONMENT"
+
+====================================================================
+L2
+
+
+---
+- name: configure auto-healing for web server
+  hosts: all
+  become: yes
+  tasks:  
+    - name: ensure ngnix service is running
+      service: 
+        name: nginx
+        state: started
+        enabled: yes
+   
+    - name: setup auto-restart for nginx service
+      lineinfile: 
+        path: /etc/system/system/nginx.service.d/override.conf
+        line: "Restart=alway"
+     - name: Reload systemctl daemon-reload
+
+
+resource "aws_vpc" "main" {
+  cidr_block = "10.0.0.0/16"
+}
+
+resource "azurerm_virtual_natwork" "main" {
+  name                       = "ravi-vnet"
+  location                   = "East US"
+  address_space              = ["10.0.0.0/16"]
+  resource_group_name        = azurerm_resorce_group.main.name
+}
+
+
+apiVersion: apps/v1
+kind: Deployment
+metadata: 
+  name: ravi-web-app
+spec: 
+  replicas:  3
+  selector:
+    matchLabels:
+      apps: ravi-web-app
+  template:
+    metadata:
+      labels:
+        app: ravi-web-app
+    spec:
+      containers:
+          - name: nginx
+            image: nginx
+            ports
+              - containersPorts:
+            livenessProbe: 80
+              httpGet:
+                path: /heathhz
+                port: 80 
+              initialDelaySeconds: 5
+              periodSeconds: 10
+            readonessProbe:
+              httpGet:
+              path: /healthz
+              port: 80
+            initialDelaySeconds: 5
+            periodSeconds: 10
+
