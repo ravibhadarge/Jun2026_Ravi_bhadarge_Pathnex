@@ -1,0 +1,95 @@
+--- 
+- name: implement the ssh key authonticatation
+  hosts: ngnix-server
+  become: yes
+  tasks:
+    - name: Generate ssh key pair
+      command: ssh-keygen -t rsa -b 2048 -f /home/ravi/.ssh/id_rsa -N ""
+    - name: add ssh public key to authorized_key
+      authorized_key:
+        user: ravi
+        state: present 
+        key: "{{ lookup('file', '/home/ravi/.ssh/id_rsa.pub')}}"  
+ 
+
+
+resource "aws_vpc_flow_log" "ravi_flow_log" {
+  log_group_name = "ravi-flow-logs"
+  vpc_id         = aws_vpc.ravi_vpc.id
+  traffic_type   = "ALL"
+  log_destination_type = "cloud-watch-logs"
+}
+
+resource "aws_cloudwatch_log_group" "ravi_flow_logs_group" {
+  name = "pravi-flow-logs"
+}
+
+
+
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: online-shopping-web-policy
+spec:
+  podSelector:
+    matchLabels:
+      app: online-shopping
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app: ravi-api
+  egress:
+    - to:
+        - podSelector:
+            matchLabels:
+              app: ravi-database
+
+
+
+ agent nginx-server
+    environment {
+        AWS_ACCESS_KEY_ID = credentials('aws-access-key')
+        AWS_SECRET_ACCESS_KEY = credentials('aws-secret-key')
+    }
+    stages {
+        stage('Build') {
+            steps {
+                echo 'Building Docker image...'
+                docker.build('pathnex-web-app')
+            }
+        }
+        stage('Deploy') {
+            steps {
+                echo 'Deploying to AWS EC2...'
+                sh 'aws ec2 run-instances --image-id ami-0abcd1234 --count 1 --instance-type t2.micro'
+            }
+        }
+    }
+}
+
+
+stages:
+  - build
+  - deploy
+
+build:
+  stage: build
+  script:
+    - docker build -t online-shopping-app .
+
+deploy:
+  stage: deploy
+  script:
+    - echo "Deploying with secure credentials"
+    - aws ec2 run-instances --image-id ami-0abcd1234 --count 1 --instance-type t2.micro --access-key $AWS_ACCESS_KEY --secret-key $AWS_SECRET_KEY
+
+
+
+docker logs container-name
+docker inspact container-name 
+kubectl logs pod-name
+kubectl inspact pod pod-name
