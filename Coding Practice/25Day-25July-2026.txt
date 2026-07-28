@@ -1,95 +1,183 @@
---- 
-- name: implement the ssh key authonticatation
-  hosts: ngnix-server
+---
+- name: Setup Prometheus Node Exporter
+  hosts: all
   become: yes
   tasks:
-    - name: Generate ssh key pair
-      command: ssh-keygen -t rsa -b 2048 -f /home/ravi/.ssh/id_rsa -N ""
-    - name: add ssh public key to authorized_key
-      authorized_key:
-        user: ravi
-        state: present 
-        key: "{{ lookup('file', '/home/ravi/.ssh/id_rsa.pub')}}"  
+    - name: install prometheus node exporter
+      yum:
+        name: prometheus-node-exporter
+        state: present
+    - name: start prometheus node exporter service
+      service:
+        name: prometheus-node-exporter
+        state: started
+        enabled: yes
+
+
+resource "aws_cloudwatch_metric_alarm" "ravi_cpu_alarm" {
+  alarm_name          = "ravi-cpu-utilization-high"
+  comparison_operator = "GreaterThanThreshold"
+  evaluation_periods  = "1"
+  metric_name         = "CPUUtilization"
+  namespace           = "AWS/EC2"
+  period              = "60"
+  statistic           = "Average"
+  threshold           = "80"
+  
+
  
+ dimensions = {
+    InstanceId = aws_instance.ravi_ec2.id
+  }
 
-
-resource "aws_vpc_flow_log" "ravi_flow_log" {
-  log_group_name = "ravi-flow-logs"
-  vpc_id         = aws_vpc.ravi_vpc.id
-  traffic_type   = "ALL"
-  log_destination_type = "cloud-watch-logs"
+  alarm_actions = [aws_sns_topic.ravi_alerts.arn]
 }
 
-resource "aws_cloudwatch_log_group" "ravi_flow_logs_group" {
-  name = "pravi-flow-logs"
-}
+resource "aws_sns_topic" "ravi_alerts" {
+  name = "ravi-alerts"
 
 
 
-apiVersion: networking.k8s.io/v1
-kind: NetworkPolicy
+apiVersion: apps/v1
+kind: Deployment
 metadata:
-  name: online-shopping-web-policy
+  name: prometheus
 spec:
-  podSelector:
+  replicas: 1
+  selector:
     matchLabels:
-      app: online-shopping
-  policyTypes:
-    - Ingress
-    - Egress
-  ingress:
-    - from:
-        - podSelector:
-            matchLabels:
-              app: ravi-api
-  egress:
-    - to:
-        - podSelector:
-            matchLabels:
-              app: ravi-database
+      app: prometheus
+  template:
+    metadata:
+      labels:
+        app: prometheus
+    spec:
+      containers:
+        - name: prometheus
+          image: prom/prometheus:latest
+          ports:
+            - containerPort: 9090
+
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: grafana
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: grafana
+  template:
+    metadata:
+      labels:
+        app: grafana
+    spec:
+      containers:
+        - name: grafana
+          image: grafana/grafana:latest
+          ports:
+            - containerPort: 3000
 
 
 
- agent nginx-server
-    environment {
-        AWS_ACCESS_KEY_ID = credentials('aws-access-key')
-        AWS_SECRET_ACCESS_KEY = credentials('aws-secret-key')
-    }
+resource "aws_cloudwatch_metric_alarm" "ravi_cpu_alarm" {
+  alarm_name          = "ravi-cpu-utilization-high"
+  comparison_operator = "GreaterThanThreshold"
+  evaluation_periods  = "1"
+  metric_name         = "CPUUtilization"
+  namespace           = "AWS/EC2"
+  period              = "60"
+  statistic           = "Average"
+  threshold           = "80"
+
+  dimensions = {
+    InstanceId = aws_instance_ec2.id
+  }
+
+  alarm_actions = [aws_sns_topic.ravi_alerts.arn]
+}
+
+resource "aws_sns_topic" "ravi_alerts" {
+  name = "ravi-alerts"
+}
+
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: prometheus
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: prometheus
+  template:
+    metadata:
+      labels:
+        app: prometheus
+    spec:
+      containers:
+        - name: prometheus
+          image: prom/prometheus:latest
+          ports:
+            - containerPort: 9090
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: grafana
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: grafana
+  template:
+    metadata:
+      labels:
+        app: grafana
+    spec:
+      containers:
+        - name: grafana
+          image: grafana/grafana:latest
+          ports:
+            - containerPort: 3000
+
+
+
+pipeline {
+    agent any
     stages {
-        stage('Build') {
+        stage('monitor') {
             steps {
-                echo 'Building Docker image...'
-                docker.build('pathnex-web-app')
+                script {
+                    echo 'triggering cloudWatch alarms if CPU exceeds 80%'
+                    sh 'aws cloudwatch put-metric-data --namespace "AWS/EC2" --metric-name "CPUUtilization" --value 90'
+                }
             }
         }
-        stage('Deploy') {
+        stage('test') {
             steps {
-                echo 'Deploying to AWS EC2...'
-                sh 'aws ec2 run-instances --image-id ami-0abcd1234 --count 1 --instance-type t2.micro'
+                echo 'running tests...'
             }
         }
     }
 }
+
+
 
 
 stages:
-  - build
-  - deploy
+  - monitor
+  - test
 
-build:
-  stage: build
+monitor:
+  stage: monitor
   script:
-    - docker build -t online-shopping-app .
+    - aws cloudwatch put-metric-data --namespace "AWS/EC2" --metric-name "CPUUtilization" --value 90
 
-deploy:
-  stage: deploy
+test:
+  stage: test
   script:
-    - echo "Deploying with secure credentials"
-    - aws ec2 run-instances --image-id ami-0abcd1234 --count 1 --instance-type t2.micro --access-key $AWS_ACCESS_KEY --secret-key $AWS_SECRET_KEY
-
-
-
-docker logs container-name
-docker inspact container-name 
-kubectl logs pod-name
-kubectl inspact pod pod-name
+    - echo "running tests..."
