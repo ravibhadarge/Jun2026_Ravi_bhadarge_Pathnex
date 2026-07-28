@@ -1,0 +1,97 @@
+---
+- name: deploy docker containers with helm
+  hosts: dev-server
+  tasks:
+    - name: install helm
+      command: curl https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 | bash
+    - name: deploy microservices with helm
+      command: helm install online-shop ./microservice-chart
+
+
+modules/
+    vpc/
+        main.tf
+        variables.tf
+        outputs.tf
+
+variable "vpc_cidr" {
+  description = "VPC CIDR Block"
+  type        = string
+}
+
+resource "aws_vpc" "this" {
+  cidr_block = var.vpc_cidr
+
+  tags = {
+    Name = "terraform-vpc"
+  }
+}
+
+output "vpc_id" {
+  value = aws_vpc.this.id
+}
+
+
+
+
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: online-shop
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: online-shop
+  template:
+    metadata:
+      labels:
+        app: online-shop
+    spec:
+      containers:
+        - name: nginx
+          image: ravibhadarge/online_shop:latest
+          ports:
+            - containerPort: 80
+
+
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: online-shop-hpa
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: online-shop
+  minReplicas: 2
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 80
+
+
+pipeline {
+    agent any
+    stages {
+        stage('scale up') {
+            steps {
+                echo 'scaling up Jenkins pipeline agents for heavy workloads...'
+                // Simulating scaling logic
+            }
+        }
+        stage('build') {
+            steps {
+                echo 'building project...'
+            }
+        }
+        stage('deploy') {
+            steps {
+                echo 'deploying project...'
+            }
+        }
+    }
+}
+
+
+FROM nginx
+HEALTHCHECK CMD curl --fail http://localhost || exit 1
