@@ -1,0 +1,152 @@
+---
+- name: multi naode nfinx setup 
+  hosts: dev-server
+  become: yes
+  tasks: 
+    - name: install ngnix
+      yum: 
+        name: nginx
+        state: present
+    - name: start nginx
+      service:  
+        name: ngnix
+        state: started
+        enabled: yes
+
+
+resource "aws_iam_policy" "dev-monitoring"
+  name  = "dev-user"
+}
+ 
+resource "aws_iam_policy" "dev-monitoring"
+  name             = "dev-user"
+  description      = "policy for monotoring"
+  policy           = jsonencode ({
+    version        = "2012-10-17"
+    statement      = [
+      {
+        Action     = "s3:ListBucket"
+        Effect = "Allow"
+        Resource = "arn:aws:s3:::pathnex-bucket"
+      },
+     ]
+   })
+}
+
+
+
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nginx-config
+data:
+  nginx.conf: |
+    server {
+      listen 80;
+      server_name localhost;
+      location / {
+        root   /usr/share/nginx/html;
+        index  index.html index.htm;
+      }
+    }
+
+
+
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: nginx-secret
+type: Opaque
+data:
+  password: cGF0aG5leHBhc3M=
+
+
+
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dev-nginx
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: dev-nginx
+  template:
+    metadata:
+      labels:
+        app: dev-nginx
+    spec:
+      containers:
+        - name: dev-app
+          image: ravibhadarge
+          volumeMounts:
+            - mountPath: /etc/nginx/nginx.conf
+              name: nginx-config
+              subPath: nginx.conf
+      volumes:
+        - name: nginx-config
+          configMap:
+        - name: nginx-secret
+          secret:
+            secretName: nginx-secret
+
+
+
+pipeline {
+    agent any
+    stages {
+        stage('Build') {
+            steps {
+                script {
+                    docker.build('dev-app')
+                }
+            }
+        }
+        stage('Deploy') {
+            steps {
+                script {
+                    kubectl apply -f kubernetes/deployment.yaml
+                }
+            }
+        }
+    }
+}
+
+
+
+
+
+
+
+stages:
+  - build
+  - push
+  - deploy
+
+build:
+  stage: build
+  script:
+    - docker build -t ravi-web-app .
+
+push:
+  stage: push
+  script:
+    - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD"
+    - docker push ravi-web-app
+
+deploy:
+  stage: deploy
+  script:
+    - helm repo add ravi https://charts.ravi.com
+    - helm install ravi-nginx ravi/nginx-ingress
+
+
+
+
+
+
+
+
