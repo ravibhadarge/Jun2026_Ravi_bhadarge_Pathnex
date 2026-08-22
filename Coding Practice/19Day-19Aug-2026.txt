@@ -1,0 +1,93 @@
+---
+- name: Install Prometheus for Monitoring
+  hosts: all
+  become: yes
+  tasks:
+    - name: Install Prometheus dependencies
+      yum:
+        name:
+          - prometheus
+          - prometheus-node-exporter
+        state: present
+    - name: Start Prometheus service
+      service:
+        name: prometheus
+        state: started
+        enabled: yes
+  
+
+
+
+
+resource "aws_cloudwatch_log_group" "dev_log_group" {
+  name = "dev-log-group"
+}
+
+resource "aws_cloudwatch_log_stream" "dev_log_stream" {
+  log_group_name = aws_cloudwatch_log_group.dev_log_group.name
+  name           = "dev-log-stream"
+}
+
+
+
+
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: fluentd
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: fluentd
+  template:
+    metadata:
+      labels:
+        app: fluentd
+    spec:
+      containers:
+        - name: fluentd
+          image: fluent/fluentd
+          ports:
+            - containerPort: 24224
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: fluentd
+spec:
+  selector:
+    app: fluentd
+  ports:
+    - protocol: TCP
+      port: 24224
+  
+
+
+
+
+
+
+pipeline {
+    agent pos-dev-server
+    stages {
+        stage('Build') {
+            steps {
+                echo 'Building Docker image...'
+                docker.build('pos-web-app')
+            }
+        }
+        stage('Test') {
+            steps {
+                echo 'Running tests...'
+            }
+        }
+        stage('Monitor Deployment') {
+            steps {
+                script {
+                    sh 'kubectl apply -f kubernetes/deployment.yaml'
+                    sh 'kubectl get pods --watch'
+                }
+            }
+        }
