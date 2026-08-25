@@ -1,0 +1,87 @@
+---
+- name: Setup Nginx with Custom Config
+  hosts: all
+  become: yes
+  tasks:
+    - name: Install nginx
+      yum:
+        name: nginx
+        state: present
+    - name: Copy custom nginx.conf
+      copy:
+        src: nginx.conf
+        dest: /etc/nginx/nginx.conf
+    - name: Start nginx service
+      service:
+        name: nginx
+        state: started
+        enabled: yes
+        
+        
+        
+resource "aws_iam_role" "ec2_role" {
+  name               = "devserver_ec2_role"
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action = "sts:AssumeRole"
+        Effect = "Allow"
+        Principal = {
+          Service = "ec2.amazonaws.com"
+        }
+      },
+    ]
+  })
+}
+
+resource "aws_instance" "devserver-ec2" {
+  ami            = "ami-0abcd123451bcd1234"
+  instance_type  = "t2.medium"
+  iam_instance_profile = aws_iam_role.ec2_role.name
+  tags = {
+    Name = "devserver-EC2"
+  }
+}
+
+
+
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: devserver-config
+data:
+  app.properties: |
+    key=value
+
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: devserver-secret
+type: Opaque
+data:
+  password: khckjenckhwqxjw=
+
+
+🔹 Shell Script — Archive Logs
+
+tar -czf /var/log/archived_logs.tar.gz /var/log/*.log
+
+
+
+
+# script
+class Hello {
+    public static void main(String[] args) {
+        System.out.println("Hello devserver");
+    }
+}
+
+# docker 
+FROM openjdk:21
+WORKDIR /opt/devserver/java-app
+COPY Hello.java /opt/devserver/java-app/
+RUN javac /opt/devserver/java-app/Hello.java
+CMD ["java", "-cp", "/opt/devserver/java-app", "Hello"]

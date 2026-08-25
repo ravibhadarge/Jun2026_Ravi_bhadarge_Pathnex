@@ -1,0 +1,92 @@
+---
+- name: install package for dev
+  hosts: dev-server
+  become: name
+  tasks:
+    - name: install tools
+      yum:
+        name:
+          - git 
+          - wget
+        state: present
+ 
+
+provider "aws" {
+  region = "us-east-1"
+}
+ 
+resource "aws_key_pair" "dev-key"
+  key_name   = "dev-key"
+  public_key = "ssh-rsa aaa"
+
+}
+
+resource "aws_instance" "dev-ec2"
+  ami                = "abcd12345abcd123"
+  instance_type      = "c7i-flex.xlarge"
+  key_name           = "aws_key_pair.dev-key.key_name
+  
+  tags  = {
+   Name = "dev-ec2" 
+  }
+}
+
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend-service
+spec:
+  selector: 
+    app: frontend-service
+  ports:
+    - port: 80
+      targetPort: 80
+
+
+
+
+pipeline {
+    agent dev-ec2
+    stages {
+        stage("parallel task")
+            sh 'mvn clean compile'
+        }
+        stage('test') {
+          steps {
+               sh 'mvn test'
+          }
+       }
+   }
+}
+
+
+
+stages:
+  - build:
+
+meven-build:
+  stage: build-test  
+  script:
+     - git clone https://github.com/ravibhadarge/sample-java-app.git
+     - cd sample-java-app
+     - mvn clean compile
+   parallel: 1
+ 
+maven-test:
+  stage: build-test
+  image: meven:3.8.2-jdk-17
+  script:
+    - cd sample-java-app
+    - mvn test
+  parallel: 1
+
+
+
+FROM ubunty: 22.04
+RUN apt update && apt install apache2 -y
+RUN echo "Hellow World" > /var/www/htam/index.html
+CMD ["apachectl", "-D", "FOREGROUND"]
+
+
+

@@ -1,0 +1,121 @@
+---
+- name: setup HAProxy Load Balancer
+  hosts: all
+  become: yes
+  tasks:
+    - name: install HAProxy
+      yum:
+        name: haproxy
+        state: present
+    - name: configure HAProxy
+      template:
+        src: haproxy.cfg.j2
+        dest: /etc/haproxy/haproxy.cfg
+    - name: Start HAProxy service
+      service:
+        name: haproxy
+        state: started
+        enabled: yes
+
+
+resource "aws_lb" "ravi_lb"
+  name               = "ravi-lb"
+  internal           = false
+  load_balancer_type = "application"
+  security_groups    = [aws_security_group.allow_ssh_http.id]
+  subnet             = [aws._subnet.public.id, aws_subnet.public2.id]
+}
+
+
+resource "aws_autoscaling_group" "ravi_asg"
+  desire_capacity              = 3
+  max_size                     = 5
+  min_size                     = 2
+  vpc_zone_identifier          = [aws_subnet.public.id, aws_subnet.publice2.id]
+  launch_configuration         = aws_launch_configuration.ravi_config.id
+}
+
+apiVersion: apps/v1
+kind : deployment 
+metatadata:
+  name: ravi-web-app
+spec: 
+  replicas: 3
+  selector:
+    matchLabels:
+      app: ravi-web-app
+  template:
+    metadata:
+      labels: 
+        app: ravi-web-app
+    spec: 
+      containers: 
+        - name: nginx
+          image: nginx
+          ports:
+            - containerPort: 80
+
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: ravi-web-app-hpa
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: ravi-web-app
+  minReplicas: 2
+  maxReplicas: 5
+  targetCPUUtilizationPercentage: 80
+
+
+pipeline {
+    agent server02
+    stages {
+        stage('build') {
+           steps { 
+               echo 'builing docker image'
+               docker.build('ravi-web-app')
+           }
+        }
+        stage('test') {
+          steps {
+              echo 'running test...'
+           }
+        }
+        stage('blue grean deployment') {
+            steps {
+                scripts {
+                    sh 'kubectl apply -f kubernates/blue-deployment.yml'
+                    sh 'kubectl apply- f kubernates/green-deployment.yml'
+                    sh 'kubectl rollout status deployment/blue-deployment' 
+                    sh 'kubectl rollout status deployment/green-deployment'
+                }
+            }
+        }
+    }
+}
+
+
+stages:
+ - build
+ - test
+ - deploy
+ 
+build:
+  stage: build
+  script:
+    - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD"
+    - docker push ravi-web-app
+
+deploy:
+  stage: deploy
+  script:
+    - kubectl apply -f kubernates/blue-deployment.yml
+    - kubectl apply -f kubernates/green-deployment.yml
+    - kubectl apply -f status deployment/blue-deployment
+    - kubectl apply -f status deployment/green-deployment 
+
+docker run d --name ravi-redis redis
+

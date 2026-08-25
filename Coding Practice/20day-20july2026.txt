@@ -1,0 +1,103 @@
+
+- name: configure firewall with iptables
+  hosts: all
+  become: yes
+  tasks:
+    - name: set default policies to drop all traffic
+      command: iptables -P INPUT DROP
+    - name: allow SSH and HTTP traffic
+      command: iptables -A INPUT -p tcp --dport 22 -j ACCEPT
+      command: iptables -A INPUT -p tcp --dport 80 -j ACCEPT
+    - name: save iptables configuration
+      command: service iptables save
+
+
+resource "aws_security_group" "ravi_sg" {
+  name_prefix = "ravi-sg"
+  description = "Allow SSH and HTTP"
+
+  ingress {
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+ 
+  ingress {
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+}
+
+
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: pathnex-cluster-admin
+subjects:
+  - kind: User
+    name: ravi-user
+    apiGroup: rbac.authorization.k8s.io
+roleRef:
+  kind: ClusterRole
+  name: cluster-admin
+  apiGroup: rbac.authorization.k8s.io
+
+
+
+
+pipeline {
+    agent any
+    environment {
+        REGISTRY_PASSWORD = credentials('docker-registry-password')
+    }
+    stages {
+        stage('Build') {
+            steps {
+                echo 'building docker image...'
+                docker.build('ravi-web-app')
+            }
+        }
+        stage('Push') {
+            steps {
+                script {
+                    docker.withRegistry('https://docker.io', 'docker-credentials') {
+                        docker.image('ravi-web-app').push('latest')
+                  }
+                
+              }
+         }
+    }
+}
+
+
+
+stages:
+  - build
+  - push
+  - deploy
+
+build:
+  stage: build
+  script:
+    - docker build -t ravi-web-app .
+
+push:
+  stage: push
+  script:
+    - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD"
+    - docker push ravi-web-app
+
+deploy:
+  stage: deploy
+  script:
+    - kubectl apply -f kubernetes/deployment.yaml
+    - kubectl get pods --watch
+
+
+
+docker network create ravi-network
+docker run -dit --name c1 --network ravi-network ubuntu
+docker run -dit --name c2 --network ravi-network ubuntu

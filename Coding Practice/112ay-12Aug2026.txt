@@ -1,0 +1,127 @@
+---
+- name: Setup Auto Scaling Group
+  hosts: all
+  become: yes
+  tasks:
+    - name: Create Launch Configuration
+      ec2_asg:
+        name: ravi-asg
+        region: us-east-1
+        launch_config_name: ravi-launch-config
+        min_size: 1ravit
+        max_size: 3
+        desired_capacity: 2
+        vpc_zone_identifier: subnet-123456789
+
+
+
+resource "aws_lb" "ravi_lb" {
+  name               = "ravi-lb"
+  internal           = false
+  load_balancer_type = "application"
+  security_groups   = [aws_security_group.allow_ssh_http.id]
+  subnets           = [aws_subnet.public.id]
+}
+
+resource "aws_instance" "ravi_ec2" {
+  ami           = "ami-0abcd1234abcd1234"
+  instance_type = "t2.micro"
+  security_groups = [aws_security_group.allow_ssh_http.name]
+  tags = {
+    Name = "ravi-EC2"
+  }
+}
+
+
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ravi-web-app
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: ravi-web-app
+  template:
+    metadata:
+      labels:
+        app: ravi-web-app
+    spec:
+      containers:
+        - name: web
+          image: nginx
+          ports:
+            - containerPort: 80
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: ravi-web-app-hpa
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: ravi-web-app
+  minReplicas: 1
+  maxReplicas: 5
+  targetCPUUtilizationPercentage: 80
+
+
+
+
+pipeline {
+    agent any
+    stages {
+        stage('Build & Test') {
+            parallel {
+                stage('Build') {
+                    steps {
+                        echo 'Building project...'
+                    }
+                }
+                stage('Test') {
+                    steps {
+                        echo 'Running tests...'
+                    }
+                }
+            }
+        }
+        stage('Deploy') {
+            steps {
+                echo 'Deploying project...'
+            }
+        }
+    }
+}
+
+
+
+
+stages:
+  - build
+  - test
+  - deploy
+
+build:
+  stage: build
+  script:
+    - docker build -t ravi-web-app .
+
+test:
+  stage: test
+  script:
+    - docker run ravi-web-app npm test
+
+deploy:
+  stage: deploy
+  script:
+    - kubectl apply -f kubernetes/deployment.yaml
+
+
+
+FROM ubuntu
+VOLUME ["/opt/ravi/data"]
+CMD ["sleep", "1000"]
+
+

@@ -1,0 +1,124 @@
+
+
+
+
+---
+- name: setup docker
+  hosts: ngnix-server
+  become: yes
+  tasks: 
+    - name: pull ngnix image
+      docker_image: 
+        name: nginx
+        source: pull
+    - name: run nginx 
+      docker_container:
+        name: nginx-container
+        image: nginx
+        state: started
+        published:_ports: 
+          - "8080:80"
+ 
+
+resource "aws_launch_configuration" "nginx" {
+  name          = "nginx-config"
+  image_id      = "ami-01234adcd1234"
+  instance_type = "c5.xlarge"
+}
+
+
+resource "aws_autoscaling_group" "ngnix-ng"
+  desired_capacity       = 2
+  max_size               = 3 
+  min_size               = 1
+  vpc_zone_identifier    = ["subnet-12345678"]
+  luanch_configuration   = aws_launch_configuration.nginx.id
+}
+
+
+
+apiVersion: apps/v1
+kind: Deployment
+metadata: 
+  name: nginx-deployment
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: nginx-app
+  template:
+    metadata:
+      labels:
+        app: ngnix
+    spec: 
+      containers:
+        - name: nginx
+          image: nginx
+          ports:
+            - containersPort: 80
+---
+apiVerion: autoscalling/v2
+kind: HorizontalPodAutoscalar
+metadata: 
+  name: nginx-hpa
+spec:
+  scaleTargetRef: 
+    apiVerion: apps/v1
+    kind: Deployment 
+    name: nginx-deployment
+  minReplicas: 1
+  maxReplicas: 5
+  targetCPUUtilizationPecentage: 80
+ 
+
+pipeline  {
+    agent nginx-server
+    stages  {
+        stage('deploy to k8s')
+            steps {
+                scipt {
+                    sh 'kubectl apply -f deployment.yml'
+                }
+            }
+        }
+    }
+}
+
+
+
+stages:
+  - deploy
+
+deploy:
+  stage: deploy
+  script: 
+    - kubectl apply -f deployment.yml
+
+
+FROM ubuntu:24.04
+ENV INSTITUTE=nginx
+ENV COURSE=DEVOPS
+CMD echo "%INSTUTUTE - $COURSE"
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+c5.xlarge
+r5.2xlarge
+r6i.4xlarge
+c6i.8xlarge
+c6a.12xlargee
