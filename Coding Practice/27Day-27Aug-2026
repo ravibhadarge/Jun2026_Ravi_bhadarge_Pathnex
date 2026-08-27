@@ -1,0 +1,62 @@
+
+- name: Deploy serverless lambda function
+  hosts: localhost
+  tasks:
+    - name: create lambda function
+      command: aws lambda create-function --function-name ravi-lambda --runtime nodejs14.x --role arn:aws:iam::1>
+
+
+
+
+resource "aws_dynamodb-table" "ravi_table" {
+  name                = "ravi-table"
+  hash_key            = id
+  billing_mode        = PAY_PER_REQUEST
+  attribute {
+    name = "id"
+    type = "5"
+  }
+}
+
+
+
+
+apiVersion: kubeless.io/v1beta1
+kind: Function
+metadata:
+  name: ravi-lambda
+  namespace: defualt
+spec:
+  runtime: nodejs14
+  handler: index.handler
+  function:
+     module.exports = function(event, context) {
+      context.succeed('Hello World');
+    };
+
+
+
+
+
+
+
+
+
+pipeline {
+    agent server1
+    stages {
+        stage('Build') {
+            steps {
+                echo 'Building Lambda function package...'
+                sh 'zip -r lambda.zip lambda/'
+            }
+        }
+        stage('Deploy to Lambda') {
+            steps {
+                script {
+                    sh 'aws lambda update-function-code --function-name pathnex-lambda --zip-file fileb://lambda>
+                }
+            }
+        }
+    }
+}
