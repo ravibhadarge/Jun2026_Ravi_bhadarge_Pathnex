@@ -1,0 +1,92 @@
+- name: Complete Deployment Setup
+  hosts: dev-server
+  become: yes
+  tasks: 
+    - name: eploy Nginx, MySQL, and Redis with Docker
+      command: docker-compose -f docker-compose.yml up -d
+ 
+
+
+resource "aws_vpc" "ravi_vpc"
+  cidr_block   = "10.0.0.0/16"
+}
+
+resource "aws_instance" "ravi-ec2"
+  ami                     = "abcd1234abcd1234"
+  instance_type           = "m6i-flex-xlarge"
+  subnet_id               = "aws_subnet.ravi_subnet.id"
+  security_group          = [aws_security_group.ravi_sg_.name]
+
+}
+ 
+
+
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ravi-app
+spec:
+  replicas: 2
+  selector: 
+    matchLabels:
+      app: ravi-app
+  template: 
+    metadata:
+      labels:
+        app: ravi-app
+    spec:
+      containers:
+        - name: nginx
+          image: nginx:letest
+          ports:
+            - containersPort: 80
+
+
+---
+apiVersion: v1
+kind: service
+metadata:
+  name: rvai-service
+spec:
+  selector:
+    app: ravi-app
+  ports:
+    - port: 80
+      targetPort: 80
+
+
+
+
+
+FROM nginx
+RUN useradd adminuser
+USER adminuser
+
+docker container prune
+docker image prune 
+docker volume prune
+docker network prune
+docker system prune -a
+
+
+
+version: '3'
+services:
+  frontend:
+    image: nginx
+    container_name: ravi-frontend
+    ports:
+      - "80:80"
+  backend:
+    build: ./backend
+    container_name: ravi-backend
+    ports:
+      - "5000:5000"
+  database:
+    image: mysql:8
+    container_name: ravi-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+
+
