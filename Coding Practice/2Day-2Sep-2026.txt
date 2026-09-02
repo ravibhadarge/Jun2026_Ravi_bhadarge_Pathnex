@@ -1,0 +1,78 @@
+- name: install ane enable nginx
+  hosts: dev-server
+  become: yes
+  tasks:
+    - name: install nginx
+      yum:
+        name: nginx
+        state: present
+    - name: enabe ngnix
+      service: 
+        name: nginx
+        state: started
+        enabled: yes
+ 
+
+
+
+
+provider "aws" {
+  region = "es-east-1"
+}
+
+
+resource "aws_instance" "dev-serverEc2"
+  ami            = "ami-abcd1234abcd1234"
+  instance_type  = "r5.2xlarge"
+ 
+  tags = {
+    Name        = "dev-server" 
+    Environment = "dev-env"
+    Owner       = "devServer"
+  }
+}
+
+
+
+
+apiVersion: app/v1
+kind: Deployment
+metadata:
+  name: dev-deployment
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: dev-app
+  template:
+    metadata: 
+      labels:
+         app: dev-app
+    spec: 
+      containers:
+        - name: nginx
+          image: ravibhadarge/nginx:1.4
+          ports:
+            - contanerPort: 80
+
+
+#!bin/bash
+df -h
+top 
+free -m
+ss -tulnp
+iostat
+netstat
+
+
+
+
+
+FROM: apline
+WORKDIR /app
+COPY packege*.jeson ./
+RUN npm install
+COPY . .
+EXPOSE 3000
+CMD ["node" , "server.js"]
+
