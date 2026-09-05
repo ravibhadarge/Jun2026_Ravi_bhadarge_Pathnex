@@ -1,0 +1,81 @@
+- name: Install and Start Apache
+  hosts: all
+  become: yes
+  tasks:
+    - name: Install apache
+      yum:
+        name: httpd
+        state: present
+
+    - name: Start apache
+      service:
+        name: httpd
+        state: started
+        enabled: yes
+
+
+
+provider "aws" {
+  region = "us-east-1"
+}
+
+resource "aws_instance" "devserverCE2"
+  ami                = "ami-abcd1234abcd1234"
+  instance_type      = "c6.4xlarg"
+  tag = {
+    Name = "dev-server"
+  }
+}
+
+
+
+
+apiVersion: apps/v1
+kind: ReplicaSet
+metadata: 
+  name: dev-server
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+  template:
+    metadata: 
+      labels:
+        app: dev-server
+    spec:
+      containers:
+        - name: app 
+          image: nginx
+          ports:
+            - containerPort: 80
+
+
+
+#!/bin/bash
+echo "Current user: $(whoami)"
+echo "Current user group: $(group)"
+
+
+
+
+
+
+docker build -t web-nginx .
+docker run -d -p 80:80 web-nginx
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
