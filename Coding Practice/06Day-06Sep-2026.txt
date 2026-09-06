@@ -1,0 +1,87 @@
+
+
+- name: Install Docker
+  hosts: all
+  become: yes
+  tasks:
+    - name: Install Docker
+      yum:
+        name: docker
+        state: present
+    - name: Start Docker
+      service:
+        name: docker
+        state: started
+        enabled: yes
+  
+
+
+
+resource "aws_vpc" "main"
+  cidr_block     = "10.0.0.0/16"
+  }
+resource "aws_instance" "devops-ec2"
+  ami                 = "abcd1234abcd1234"
+  instanc_type        = "m7i.8xlarge"
+  subnet_id           = aws_subnet.main.id
+  tags  = { 
+    Name = "devops-Ec2"
+  }
+}
+
+
+
+apiVersion: v1
+kind: pod
+metadata:
+  name: devops-pod
+spec: 
+  containers:
+    - name: web-app
+      image: nginx
+      volumeMounts:
+        - mountPath: /usr/share/nginx/html
+          name: html-volume
+  volumes:
+    - name: html-volume
+      hostPath:
+        path: /data
+        type: Directory
+
+
+
+
+#!/bin/bash
+
+services=("nginx" "docker" "httpd")
+
+for service in "${services[@]}"
+do
+    if systemctl is-active --quiet "$service"; then
+        echo "$service is running"
+    else
+        echo "$service is not running"
+    fi
+done
+
+
+
+
+
+
+
+
+FROM node:18
+
+WORKDIR /opt/ravi/node-app
+
+COPY app.js .
+
+CMD ["node", "app.js"]
+
+
+
+
+docker build -t ravi-node-app .
+docker run -d --name ravi-node-container -p 3000:3000 ravi-node-app
+
