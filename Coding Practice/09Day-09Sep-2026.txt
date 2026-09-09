@@ -1,0 +1,114 @@
+
+- name: setup Docker container for Nginx
+  hosts: all
+  become: yes
+  tasks:
+    - name: Pull Nginx image
+      docker_image:
+        name: nginx
+        source: pull
+    - name: Run Nginx container
+      docker_container:
+        name: nginx-container
+        image: nginx
+        state: started
+        published_ports:
+          - "8080:80"
+
+
+
+
+
+resource "aws_launch_configuration" "devops" {
+  name = "devops-config"
+  image_id = "ami-abcd1234abcd1234"
+  instance_type = "m7i.x12large"
+}
+
+resource "aws_autoscaling_group" "devops" {
+  desired_capacity     = 20
+  max_size             = 30
+  min_size             = 10
+  vpc_zone_identifier  = ["subnet-12345678"]
+  launch_configuration = aws_launch_configuration.devops.id
+}
+
+
+
+
+apiVersion: apps/v1
+kind: Deployment
+  replicas: 1
+  selector:
+    matchLabels:
+      app: devops-app
+        app: devops-app
+    spec:
+      containers:
+        - name: nginx
+          image: nginx
+          ports:
+            - containerPort: 80
+
+---
+
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: devops-hpa
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: devops-deployment
+  minReplicas: 10
+  maxReplicas: 20
+  targetCPUUtilizationPercentage: 50
+
+
+
+
+
+
+pipeline {
+    agent any
+    stages {
+        stage('Deploy to Kubernetes') {
+            steps {
+                script {
+                    sh 'kubectl apply -f deployment.yaml'
+                }
+            }
+        }
+    }
+}
+
+
+
+  template:
+    metadata:
+      labels:
+
+
+
+
+stages:
+  - deploy
+
+deploy:
+  stage: deploy
+  script:
+    - kubectl apply -f kubernetes/deployment.yaml
+
+
+
+
+
+
+FROM ubuntu:22.04
+ENV INSTITUTE=Pathnex
+ENV COURSE=DevOps
+CMD echo "$INSTITUTE - $COURSE"metadata:
+  name: devops-deployment
+spec:
+
