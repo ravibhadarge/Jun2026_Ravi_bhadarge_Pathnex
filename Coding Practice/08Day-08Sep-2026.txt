@@ -1,0 +1,119 @@
+- name : install docker compose
+  hosts: dev-server
+  become: yes
+  tasks:
+    - name: install docker compos dependency
+      yum:
+        name: "python3-pip"
+        state: present
+    - name: install docker compos
+      pip: 
+        name: docker-compose
+       
+
+
+
+
+resource "aws_security_group" "devops-sg"
+  name               = "allow_ssh_http"
+  decription         = "Allow SSH and HTTP acces "
+  ingess {
+    from_port    = 22
+    to_port      = 22
+    protocol     = "tcp"
+    cidr_block   = ["0.0.0.0/0"]
+  }
+  ingess {
+    from_port    = 80
+    to_port      = 80
+    protocol     = "tcp"
+    cidr_block   = ["0.0.0.0/0"]
+  }
+
+resource "aws_instance" "devops_ec2" {
+  ami           = "ami-abcd1234abcd1234"
+  instance_type = "m7i.x12large"
+  security_groups = [aws_security_group.allow_ssh_http.name]
+
+  ebs_block_device {
+    device_name = "/dev/sdh"
+    volume_size = 30
+  }
+}
+
+
+
+
+
+
+
+
+
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: web-service
+spec:
+  type: NodePort
+  selector:
+    app: web-app
+  ports:
+    - protocol: TCP
+      port: 80
+      nodePort: 30007
+
+
+
+
+
+
+
+
+pipeline {
+    agent any
+    stages {
+        stage('Build Docker Image') {
+            steps {
+                script {
+                    docker.build('web-app')
+                }
+            }
+        }
+        stage('Push Docker Image') {
+            steps {
+                script {
+                    docker.withRegistry('https://docker.io', 'docker-credentials') {
+                        docker.image('web-app').push('latest')
+                    }
+                }
+            }
+        }
+    }
+}
+
+
+
+
+
+stages:
+  - build
+  - push
+
+build:
+  stage: build
+  script:
+    - docker build -t devops-app .
+
+push:
+  stage: push
+  script:
+    - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD"
+    - docker push devops-app
+
+
+
+
+FROM alpine:latest
+WORKDIR /opt/devops/alpine-app
+CMD ["echo", "Hello Devops"]
