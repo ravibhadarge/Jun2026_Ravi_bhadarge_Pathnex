@@ -1,0 +1,153 @@
+- name: Pull Web App Image
+  community.docker.docker_image:
+    name: ravibhadarge/web-app:v1.1
+    source: pull
+
+- name: Pull Database App Image
+  community.docker.docker_image:
+    name: ravibhadarge/database-app:v1.1
+    source: pull
+
+- name: Run Web App Container
+  community.docker.docker_container:
+    name: web-app
+    image: ravibhadarge/web-app:v1.1
+    state: started
+    published_ports:
+      - "8080:80"
+
+- name: Run Database App Container
+  community.docker.docker_container:
+    name: database-app
+    image: ravibhadarge/database-app:v1.1
+    state: started
+    published_ports:
+      - "3306:3306"
+
+
+
+
+resource "aws_vpc" "main" {
+  cidr_block = "10.0.0.0/16"
+}
+
+resource "aws_subnet" "public" {
+  vpc_id                  = aws_vpc.main.id
+  cidr_block              = "10.0.1.0/24"
+  availability_zone       = "us-east-1a"
+  map_public_ip_on_launch = true
+}
+
+resource "aws_subnet" "private" {
+  vpc_id            = aws_vpc.main.id
+  cidr_block        = "10.0.2.0/24"
+  availability_zone = "us-east-1b"
+}
+
+
+
+
+
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: app-db
+spec:
+  serviceName: "app-db"
+  replicas: 3
+
+  selector:
+    matchLabels:
+      app: app-db
+
+  template:
+    metadata:
+      labels:
+        app: app-db
+
+    spec:
+      containers:
+        - name: db
+          image: ravibhadarge/database-app:v1.1
+
+          ports:
+            - containerPort: 3306
+              name: mysql
+
+          env:
+            - name: MYSQL_ROOT_PASSWORD
+              value: "rootpassword"
+
+          volumeMounts:
+            - mountPath: /var/lib/mysql
+              name: mysql-storage
+
+  volumeClaimTemplates:
+    - metadata:
+        name: mysql-storage
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        resources:
+          requests:
+            storage: 1Gi
+
+
+
+
+
+
+
+
+pipeline {
+    agent any
+
+    environment {
+        IMAGE_NAME = 'ravibhadarge/web-app'
+        IMAGE_TAG  = 'v1.1'
+    }
+
+    stages {
+
+        stage('Build Docker Image') {
+            steps {
+                script {
+                    docker.build("${env.IMAGE_NAME}:${env.IMAGE_TAG}")
+                }
+            }
+        }
+
+        stage('Push Docker Image') {
+            steps {
+                script {
+                    docker.withRegistry('https://docker.io', 'docker-credentials') {
+                        docker.image("${env.IMAGE_NAME}:${env.IMAGE_TAG}").push()
+                    }
+                }
+            }
+        }
+
+        stage('Deploy to Kubernetes') {
+            steps {
+                script {
+                    sh 'kubectl apply -f deployment.yaml'
+                }
+            }
+        }
+    }
+}
+
+
+
+
+
+
+
+FROM ubuntu:24.04
+
+WORKDIR /opt/devops-project
+
+COPY . /opt/devops-project/
+
+CMD ["ls", "-l", "/opt/devops-project"]
+
