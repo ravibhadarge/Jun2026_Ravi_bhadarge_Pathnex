@@ -1,0 +1,123 @@
+---
+- name: deploy web application to multiple hosts
+  hosts: prod-server
+  become:  yes
+  tasks:
+    - name: copy web app file
+      copy:
+        src: /home/ravi/web/app/
+        dest: /var/www/html/
+    - name: start web app service
+      service:
+        name: apache2
+        state: started        
+        enabled: yes
+
+
+
+
+resource "aws_lb" "devops_lb"
+  name                = "devops-lb"
+  internal            = false
+  load_balancer_type  = "application"   
+  security_group      = [aws_security_group.allow_ssh_http.id]
+  subnet              = [aws_subnet.pulic.id]
+}
+
+resource "aws_instance" "devops_ec2"
+  ami            = "abcd12234abcd1234"
+  type           = "m7i.12xlarge"
+  security_group = [aws_security_group.allow_ssh_http.id]
+
+  tags = {
+    Name = "devops-ec2"
+  }
+}
+
+
+
+
+pipiline {
+    agent devops-server    
+    environment {    
+        IMAGE_NAME = 'devops-web-app'   
+        DEPLOY_ENV = 'production'
+    }
+    stages {
+        stage('Build') {
+            steps {
+                echo 'Building Docker Image...'
+                docker.build("${env.IMAGE_NAME}")  
+            }
+        }
+
+
+        stage('Test') {
+            steps {
+                echo 'running test...'
+            }
+        }
+        stage('Deplot to k8s') {
+            steps {
+                script {
+                    if (env.DEPLOY_ENV == 'production') {
+                        sh 'kubectl apply -f kubernetes/prod-deployment.yaml'
+                    } else {
+                        sh 'kubectl apply -f kubernetes/dev-deployment.yaml'
+                    }
+                } 
+            }
+        }
+    }
+}
+
+
+
+
+
+stages:
+  - build:
+  - push:
+  - deploy
+build:
+  stage: build
+  script:
+    - docker build -t devops-web-app .
+push:
+  stage: push
+  script:
+    - |
+      if [ "$CI_COMMIT_REF_NAME" == "main" ]; then
+        kubectl apply -f kubernetes/prod-deployment.yaml
+      else
+        kubectl apply -f kubernetes/dev-deployment.yaml
+      fi
+
+
+
+
+
+
+
+
+FROM ubuntu:24.02
+RUN apt update && \
+    apt install curl -y && \
+    apt install vim -y
+CMD ["echo", "Hello Devops"]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
