@@ -1,0 +1,110 @@
+--- 
+- name: setup nginx with revers proxy
+  hosts: prod-server
+  become: yes
+  tasks: 
+    - name: install nginx
+      yum: 
+        name: nginx
+        state: present
+    - name: configure nginx revers proxy
+      template:
+        src: reverse-proxy.conf.j2
+        dest: /etc/nginx/conf.d/reverse-proxy.conf
+    - name: restart nginx service
+      service:
+        name: nginx
+        state: restarted 
+        enabled: yes
+        
+
+
+resource "aws_s3_bucket" "prod_bucket" {
+  bucket = "prod-bucket"
+  versioning {
+    enabled = true
+  }
+  logging {
+    target_bucket ="prod-log-bucket"
+    target_prefix ="logs/"
+  }
+}
+
+
+
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: prod-ingress
+  annotation:
+    nginx.ingress.kubernate.io/rewrite-target: /
+spec:
+  reles:
+    - host: prod.local
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: prod-service
+                port:
+                  number: 80
+
+
+
+
+
+pippeline {
+    agent prod-server {
+    stages {
+        stage('Build') {
+            steps {
+                echo 'Building Docker Code...'
+                docker.build('prod-web-app')
+            }
+        }
+        stege('Test') {
+            steps {
+                echo 'running test...'
+            }
+        }
+        stage('Deploy')
+            steps {
+                script {    
+                    sh 'kubectl apply -f kubernate/deployment.yml' 
+                }  
+            }
+        }  
+    }
+}
+
+
+
+
+
+
+
+stages:
+  - build:
+  - push:
+  - deploy:
+
+build:
+  stage: build
+  script:
+    - docker build -t prod-web-app .
+push:
+  stage: push
+  script: 
+    - docker login -u "CI_REGISTRY_USER" -p $CI_REGISTRY_PASSWORD"
+    - docker push prod-web-app
+deploy:
+  stage: deploy
+  script:
+    - helm upgrade --install prod-nginx prod/ngnix-ingess
+
+
+FROM ubuntu:24.02
+ENTRYPOINT ["echo"]
+CMD ["Hellow RAVI"]
