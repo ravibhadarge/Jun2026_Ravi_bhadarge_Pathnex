@@ -1,0 +1,131 @@
+- name: Setup Auto Scaling Group
+  hosts: all
+  become: yes
+  tasks:
+    - name: Create Launch Configuration
+      ec2_asg:
+        name: pathnex-asg
+        region: us-east-1
+        launch_config_name: pathnex-launch-config
+        min_size: 1
+        max_size: 3
+        desired_capacity: 2
+        vpc_zone_identifier: subnet-12345678
+
+
+
+resource "aws_lb" "devops_lb"
+  name                = "devops-lb"
+  internal            = false
+  load_balancer_type  = "application"
+  security_groups     = [aws_security_group.allow_ssh_http.id]
+  subnet              = [aws_subnet.public.id]
+}
+
+resource "aws_instance" "devops_ec2" {
+  ami                 = "ami-abcd1234abcd1234"
+  instance_type       = "c7i.x12large"
+  security_group      = [aws_security_group.allow_ssh_http.name]
+  tags = {
+    Name = "devops-ec2"
+  }
+}
+
+
+
+
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: devops-web-app
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: devops-web-app
+  template:
+    metadata:
+      labels:
+        app: devops-web-app
+    spec: 
+      containers: 
+        - name: devops-app
+          image: nginx
+          ports:
+            - containerPort: 80
+
+
+---
+apiVersion: autoscaling/v2
+kind: HorizontalAutoScaler
+metadata: 
+  name: devops-web-app-hpa
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: devops-web-app
+  minReplicas: 1
+  maxReplicas: 5
+  targetCPUUtilizationPercentage: 80
+
+
+
+pipeline  {
+    agent web-server
+    stages {
+        stage(build and test) {
+            parallel {
+                stage('Build') {
+                    steps {
+                        echo 'Building project...'
+                    }
+                }
+                stage('Test') {
+                    steps {
+                        echo 'Running tests...'
+                    }
+                }
+            }
+        }
+        stage('Deploy') {
+            steps {
+                echo 'Deploying project...'
+            }
+        }
+    }
+}
+
+
+
+
+
+stages:
+  - build
+  - test
+  - deploy
+
+build:
+  stage: buils
+  script:
+    - docker build -t devops-web-app .
+test:
+  stege: test
+  script:
+    - docker run deops-web-app npm test
+deploy:
+  stage:
+  script:
+    - kubectl apply -f kubernate/deployment
+
+
+FROM: node:22
+WORKDIR: /app
+COPY packege*.json /app
+RUN npm install
+COPY . .
+EXPOSE 8080
+CMD ['node', 'server.js']
+
+docker volume create devops-volume
