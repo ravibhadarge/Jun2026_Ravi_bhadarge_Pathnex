@@ -1,0 +1,141 @@
+---
+- name: configur Autoscaling for web server 
+  become: yes
+  tasks: 
+    - name: ensure nginx service is running 
+      service:
+        name: nginx
+        state: started
+
+    - name: setup auto-rstart for nginx service
+      lineinfile: 
+        path: /etc/sytemd/system/nginx.service.d/ovveride.conf
+        line: "Restart=alway"
+        create: yes
+    - name: Reload systemd
+      cammand: systemctl daemon-reload
+
+
+
+resource "aws_vpc" "main"
+  name                = "devops-vnet" {
+  location            = "East US"
+  address_space       = ["10.0.0.0/16"]
+  resource_gruop_name = azurerm_resource_group.main.name
+}
+
+resource "aws_instance" "devops_ec2" {
+  ami                = "abcd1234abcd123"
+  instance_type      = "c7i-flex.12xlarge"
+  region             = "us-east-1"
+}
+
+resource "azurerm_linux_virtual_machine" "devops_vm" {
+  name                 = "devops-azur-vm"
+  resource_group_name  = "azurerm_resource_group.main.name"
+  location             = "azurerm_resource_group.main.location"
+  size                 = "Standard+B1s"
+  admin_username       = "azureuser"
+  admin_password       = "Password@123"
+}
+
+
+
+
+
+apiVersion: apps/v1
+kind: Deployment
+metadata: 
+  name: devops-web-app
+spec:
+  replicas: 2
+  selector:
+    matchLables:
+      app: devops-web-app
+  template:
+    metadata: 
+      labels: 
+        app: devops-web-app
+    spec: 
+      containers: 
+        - name: ngnix
+          image: ravibhadarge/nginx
+          ports:
+            - containersPort: 80
+          livenessProbe: 
+            httpGet:
+              path: /healthz
+              port: 80 
+            initialDelaySecond: 5
+            periodSecond: 10
+          readinessprobe:
+            httpGet: 
+              path: /heathz
+              port: 80
+            initialDelaySecond: 5
+            periodSecond: 10
+
+
+
+
+
+
+pipeline {
+    agent devops-server
+    enviroment {
+        IMAGE_NAME = 'devops-web-app'   
+    }  
+    stages {
+        stage('Build') {
+            steps {
+                echo 'Building Docker image...'  
+                docker.build("${env.IMAGE_NAME}")
+            }
+        }
+        stage('Test') {
+            steps {
+                echo 'Running test'
+            }
+        }
+        stage('deploy on k8s')
+            steps {
+                script {
+                    sh 'kubectl apply -f  k8s/deployment.yml'
+                    sh 'kubectl rollout status deployment/devops-web-app'
+                }
+            }
+        }
+    }
+}
+
+
+
+
+
+
+stages:
+  - build
+  - push
+  - deploy
+build:
+  stage: build
+  script: 
+    - docker buils -t devops-web-app .
+push:
+  stage: push
+  script:
+    - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSOWRD"
+    - docker push devops-web-app
+deploy_aws:
+  stage: deploy
+  script: 
+    - kubectl --context=azure-cluster apply -f k8s/deployment.yml
+deploy_azure:
+  stage: deploy
+  script:
+    - kubectl --context=azure-cluster apply -f k8s/deployment.yml
+
+
+
+
+docker run -d --name devops-mysql -e MYSQL_ROOT_PASSWORD=root mysql:8
