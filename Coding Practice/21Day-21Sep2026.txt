@@ -1,0 +1,134 @@
+---
+- name: Backup and restore files
+  hosts: devops-server
+  become: yes
+  tasks:
+    - name: Create backup of /etc directory
+      command: tar -czvf /tmp/etc-backup.tar.gz /etc
+    - name: Copy backup to remote server
+      copy:
+        src: /tmp/etc-backup.tar.gz
+        dest: /tmp/etc-backup.tar.gz
+    - name: Restore backup from remote server
+      command: tar -xzvf /tmp/etc-backup.tar.gz -C /
+
+
+
+
+resource "aws_s3_bucket" "devops-bucket" {
+  bucket = "devops-backup-bucket"
+  region = "us-east-1"
+  versioning {
+    enabled = true
+  }
+}
+
+resource "aws_s3_bucket" "devops_backup_bucket_eu" {
+  bucket  = "devops-backup-bucket-eu"
+  region  = "eu-west-1"
+  versioning {
+    enabled = true
+  }
+}
+
+resource "aws_s3_bucket_object" "devops_bucket_file" {
+  bucket = aws_s3_bucket.devops_bucket.bucket 
+  key    = "backup.tar.gz"
+  source = "devops-backup.tar.gz"
+}
+
+
+
+
+
+apiVersion: apps/v1
+kind: StatefulSet
+metadata: 
+  name: devops-statefulset
+spec:
+  serviceName: "devops"
+  replicas: 3
+  selactor:
+    matchLabels:
+      app: devops
+  template:
+    metadata:
+      labels:
+        app: devops
+    spec:
+      containers: 
+        - name: nginx
+          image: ravibhadarge/nginx
+          volumeMounts:
+            - mountPath: /usr/share/nginx/html
+              name: web-content
+  volumeClaimTemplates:
+  - metadata:
+      name: web-content
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      resources:
+        requests:
+          storage: 5Gi
+
+
+
+
+
+pipeline {
+    agent server2 {
+    stages { 
+        stage('Backup') {
+            steps {
+                echo 'Backing up Jenkins workspace...'
+                sh 'tar -czvf /tmp/jenkins-backup.tar.gz ${WORKSPACE}'
+            }
+        }
+        stage('Restore') {
+            steps {
+                echo 'Restoring Jenkins workspace...'
+                sh 'tar -xzvf /tmp/jenkins-backup.tar.gz -C ${WORKSPACE}'
+            }
+        }
+    }
+}
+
+
+
+
+
+
+
+stages:
+  - backup
+  - restore
+
+backup:
+  stage: backup
+  script:
+    - tar -czvf /tmp/backup.tar.gz kubernetes/deployment.yml
+
+restore:
+  stage: restore
+  script:
+    - tar -xzvf /tmp/backup.tar.gz -C kubernetes/
+
+
+
+
+
+
+
+ version: '3'
+services:
+  web:
+    image: nginx
+    container_name: pathnex-nginx
+    ports:
+      - "80:80"
+
+
+
+
+
+ 
