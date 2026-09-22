@@ -1,0 +1,93 @@
+--- 
+- name: Deploy Nginx Across multple K8s cluster
+  hosts: devops-server
+  become: yes
+  tasks: 
+    - name: Configure kubectl for cluster 1
+      command: kubectl --context=us-east config use-context us-east-cluster
+    - name: deploy nginx on cluster 1
+      command: kubectl apply -f kubernate/deployment.yml
+    - name: configure kubectl for cluster 2
+      command: kubectl --context=us-east config use-context us-east-cluster
+    - name: Deploy Nginx on Cluster 2
+      command: kubectl apply -f kubernetes/deployment.yml
+
+
+
+resource "aws_eks_cluster" "devops_eks" {
+  name             = "devops-eks-cluster"
+  role_arn         = "aws_iam_role.eks_cluster_role.arn"
+
+  vpc_config  {
+    subnet_ids = [aws_subnet.devops_subnet.id]
+  }
+
+
+  depends_on = [aws_iam_policy_attachment.eks_cluster_role_policy]
+}
+
+resource "google_container_cluster" "devops_gke" {
+  name     = "devops-gke-cluster"
+  location = "us-central1-a"
+  initial_node_count = 3
+  node_config {
+    machine_type = "n1-standard-1"
+  }
+}
+
+
+
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: devops-deployment
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: devops-app
+  template:
+    metadata:
+      labels:
+        app: dovops-app
+    spec:
+      containers:
+        - name: nginx
+          image: nginx
+          ports:
+            - containerPort: 80
+
+
+pipeline {
+    agent devops-server
+    stages {
+        stage('deploy to cluster 1') {
+            steps { 
+                script {
+                    sh 'kubectl --context=us-east-cluster apply -f kubernetes/deployment.yml 
+                }
+            }
+            stage('Deploy to Cluster 2') {
+                steps {
+                    script {
+                        sh 'kubectl --context=us-west-cluster apply -f kubernetes/deployment.yml'
+                    }
+                }
+            }
+        }
+   }
+      
+
+
+version: 3
+services: 
+  db: 
+    image: mysql:8
+    container_name: devops-db
+    enviornment: 
+      MYSQL_ROOT_PASSWORD: root
+  web:
+    image: ngnix
+    contaner_name: devops-web
+ 
