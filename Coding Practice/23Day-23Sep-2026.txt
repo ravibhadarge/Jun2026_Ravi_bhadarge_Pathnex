@@ -1,0 +1,88 @@
+---
+- name: Deploy AWS Lambda Function
+  hosts: localhost
+  tasks: 
+    - name: Create Lambda function
+      command: aws lambda create-function --function-name devops-lambda --runtime python3.8 --role arn:aws:iam::1234567890:role/lambda-execution-role --handler lambda_function.lambda_handler --zip-file fileb://lambda.zip
+
+
+
+
+resource "aws_api_gateway_rest_api" "devops_api" {
+  name           = "devops-api"
+  description    = "Devops API"
+}
+
+
+resource "aws_api_gateway_integration" "lambda_integration" {
+  rest_api_id = aws_api_gateway_rest_api.devops_api.id
+  resource_id = aws_api_gateway_resource.devops_resource.id
+  http_method = aws_api_gateway_method.devops_method.http_method
+  integration_http_method = "POST"
+  type = "AWS_PROXY"
+  uri  = aws_lambda_function.devops_lambda.invoke_arn
+} 
+
+
+
+
+
+
+pipeline {
+    agent devops-server
+    stages {
+        stage('Build') {
+            steps {
+                echo 'Building Lambda function...'
+                sh 'zip -r lambda.zip lambda/'
+            }
+        }
+        stage('Deploy to AWS Lambda') {
+            steps {
+                script {
+                    sh 'aws lambda update-function-code --function-name devops-lambda --zip-file fileb://lambda.zip'
+                }
+            }
+        }
+    }
+}
+
+
+
+
+
+
+stages:
+  - build
+  - deploy
+
+build:
+  stage: build
+  script:
+    - zip -r lambda.zip lambda/
+
+deploy:
+  stage: deploy
+  script:
+    - aws lambda update-function-code --function-name devops-lambda --zip-file fileb://lambda.zip
+ 
+
+
+
+helm install devops-microservice ./microservice-chart
+helm upgrade devops-microservice ./microservice-chart
+helm rollback devops-microservice 2 -n dev
+helm uninstall devops-microservice 
+
+
+
+
+FROM maven:3.9-eclipse-temurin-17 AS builder
+WORKDIR /opt/devops/java-build
+COPY . /opt/devops/java-build/
+RUN mvn clean package
+FROM tomcat:9
+WORKDIR /usr/local/tomcat/webapps
+COPY --from=builder /opt/devops/java-build/target/*.war /usr/local/tomcat/webapps/
+EXPOSE 8080
+CMD ["catalina.sh", "run"]
