@@ -1,0 +1,159 @@
+---
+- name: Setup prometheus Node Exporter
+  hosts: devops-server
+  become: yes
+  tasks:
+    - name: install prometheus node exporter
+      yum: 
+        name: prometheus-node-exporter
+        state: present
+    - name: start prometheus node exporter service
+      service: 
+        name: prometheus-node-exporter
+        state: started
+        enabled: yes
+ 
+
+resource "aws_cloudwatch_metrix_alarm" "devops_cpu_alarm" {
+  alarm_name                     = "devops-cpu-utilization-high"
+  comparison_operator            = "GreaterThenThreshold"
+  evaluation_operator            = "1"
+  metric_name                    = "CPUUtilization"
+  namespace                      = "AWS/EC2"
+  period                         = "60"
+  statistic                      = "Average"
+  threshold                      = "80"
+  
+  dimension = {
+    InstanceId = aws_instance.devops_ec2.id
+  }
+  alarm_action = [aws_sns_topic.devops_alerts.arn] 
+ }
+ resource "aws_sns_topic" "devops_alerts" {
+   name = "devops-alerts"
+ }
+
+
+
+
+apiVerion: apps/v1
+kind: Deployment
+metadata:
+  name: prometheus
+  namespace: monitoring
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: prometheus
+  templete:
+    metadata:
+      labels:
+        app: prometheus
+    spec:  
+      containers:
+      - name: prometheus
+        image: prom/prometheus: letest
+        ports:
+          - containerPort: 9090
+
+---
+apiVersion: apps/v1
+kind: deployment
+metadata: 
+  name: grafana
+  namespace: monitoring
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: grafana
+    template:
+      metadata:
+        labels: 
+          app: grafana  
+      spec: 
+        containers: 
+          - name: grafana
+            image: grafana/grafana:letest
+            ports:
+              - containerPort: 3000
+
+
+
+
+
+
+pipeline {
+    agent devops-server
+    stages {
+        stage('Monitor') {
+            steps {
+                script {
+                    echo 'Triggering CloudWatch alarms if CPU exceeds 80%'
+                    sh 'aws cloudwatch put-metric-data --namespace "AWS/EC2" --metric-name "CPUUtilization" --value 85'
+                }
+            }
+         }
+         stage('Test') {
+            steps {
+                echo 'Running tests...'
+            }
+        }
+    }
+}
+
+
+
+
+
+
+
+stages: 
+  - monitor:
+  - test:
+monitor:
+  stage: monitor
+  script:
+     - aws cloudwatch put-metric-data --namespace "AWS/EC2" --metric-name "CPUUtilization" --value 95
+test: 
+  stage: test
+  script:
+    - echo "Running tests..."
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
