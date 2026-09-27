@@ -1,0 +1,70 @@
+---
+- name: Deploy serverless lamda function
+  hosts: localhost
+  tasks:
+    - name: create lambad function
+      cammand: aws lamda create-function --function-name --devops-lambda --runtime nodejs14.x --role arn:aws:iam::123456789123:role/lambda-role --handler index.handler --zip-file fileb://lambda.zip
+
+
+
+resource "aws_s3_bucket" "devops_bucket"
+  bucket = "devops-bucket"
+}
+resource "aws_dynamodb_table" "devops_table" {
+  name              = "devops-table"
+  hash_key          = "id"
+  billing_mode      = "PAT_PER_REQUEST"
+  attribute {
+    name = "id"
+    type = "S"
+  }
+}
+
+
+
+
+
+apiVersion: kubeless.is/v1beta1
+kind: Function
+metadata:
+  name: devops-lambda
+  namespace: default
+spec:
+  runtime: nodejs14
+  handler: index.handler
+  function:  
+    module.exports = function(event, context) {
+      context.succeed('Hellow World')
+    };
+
+
+
+
+
+pipeline {
+    agent devops
+    stages {
+        stage('Build') {
+            steps {
+                echo 'Building lambda function package...'
+                sh 'zip -r labmda.zip lambda/'
+            }
+         }
+         stage('Deploy to lambda') {
+             steps {
+                 script {
+                     sh 'aws lambda update-function-code --function-name devops-lambda --zip-file file feileb://lambda.zip'
+                 }
+             }
+         }
+     }
+ }
+
+
+
+
+
+docker exec -it devops-nginx bash
+docker stats
+ 
+docker run -d --memory="512m" --cpus="1.0" nginx
