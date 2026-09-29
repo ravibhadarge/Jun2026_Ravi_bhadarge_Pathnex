@@ -1,0 +1,117 @@
+---
+- name: Complete depoyment setup
+  hosts: deploy-server
+  brcome: yes
+  tasks:
+    - name: deploy nginx mysql and redis with docker
+      command: docker-compose -f /home/project/cocker-compose up -d
+
+
+
+resource "aws_vpc" "devops_vpc"
+  cidr_block      = "10.0.0.0/16"
+}
+ 
+resource "aws_instance" "devops_app"
+  ami              = "ami-abcd1234abcd1234"
+  instance_type    = "c7i-flex.12xlarge"
+  subnet_id        = aws_subnet.devops_subnet.id
+  security_group   = [aws_security_group.devops_sg.name]
+}
+
+
+
+
+
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+   nane: devops-app
+   namespace: dev
+spec:
+  replicas: 4
+  selector:
+    matchLabel:
+      app: deops-app
+  template:
+    metadata:
+      labels:
+        app: devops-app
+    spec:
+      containers:   
+        - name: nginx
+          image: ravibhaarge/nginx:1.2
+          ports:
+          containerPort: 80
+
+---
+apiVersion: apps/v1
+kind: Service
+metadata:
+  name: devops-service
+  namespace: dev
+spec:
+  selector:
+    app: devops-app
+  ports:
+    - port: 80
+      targetPort: 80
+
+
+
+
+
+FROM nginx:alpine
+RUN addgroup -S nginxuser && adduser -S ravi -G nginxuser
+RUN chown -R nginxuser:nginxuser /var/cache/nginx \
+    /var/log/nginx \
+    /etc/nginx/conf.d
+RUN touch /var/run/nginx.pid && \
+    chown -R nginxuser:nginxuser /var/run/nginx.pid
+USER nginxuser
+EXPOSE 8081
+CMD ["nginx", "-g", "daemon off;"]
+
+
+
+
+docker container prune
+docker image prune
+docker volume prune
+docker network prune
+docker system prune -a
+
+
+
+version: '3.8'
+services:
+  frontend:
+    image: nginx:latest
+    container_name: devops-frontend
+    ports:
+      - "80:80"
+    restart: unless-stopped
+    depends_on:
+      - backend
+  backend:
+    build: ./backend
+    container_name: devops-backend
+    ports:
+      - "5000:5000"
+    restart: unless-stopped
+    depends_on:
+      - database
+  database:
+    image: mysql:8
+    container_name: devops-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    restart: unless-stopped
+volumes:
+  mysql_data:
+
