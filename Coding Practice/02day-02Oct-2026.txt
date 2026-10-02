@@ -1,0 +1,137 @@
+---
+- name: install nginx and enable nginx
+  hosts: devops-server
+  become: yes
+  tasks:
+    - name: install nginx
+      yum: 
+        name: nginx
+        state: present
+    - name: enable nginx
+      service: 
+        name: nginx
+        state: started
+        enabled: yes
+
+
+provider "aws" {
+  region = "us-east-1"
+}
+resource "aws_instance" "devopsEC2" {
+  ami             = "abcd1234abcd1234"
+  instance_type   = "c7i.8xflex.large"
+  tags = {
+    Name        = "devops-erver"
+    Environmet  = "dev"
+    Owner       = "devopsTeam"
+  }
+}
+
+
+
+apiVersion: apps/v1
+kind: Deployment
+metadatad:
+  name: devops-deployemnt
+  namespace: devops-dev
+spec: 
+  replicas: 4
+  selectors:
+    matchLabels:
+      app: devops-app
+  template:
+    metadata:
+      labels: 
+        app: devops-app
+    spec:
+      affinity: 
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExection:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app
+                  operator: In
+                  values:
+                  - devops-app
+              topologyKey: "kubernetes.io/hostame"
+      tolerations:
+      - key: "example-key"
+        operator: "Exists"
+        effect: "NoSchedule"
+      containers: 
+        - name: devops-app
+          image: ravibhadarge/devops-app:1.2
+          ports:
+            - containersPort: 80
+          startupProbe:
+            httpGet:
+              path: /healthz
+              port: 80
+            failureThreshold: 30
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /heathz
+              port: 80
+            initialDelaySeconds: 15
+            periodSeconds: 20
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 5
+            periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: sevops-service
+  namespace: devops-dev
+spec:
+  selector:
+    app: devops-app
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 80
+  type: ClusterIP
+
+
+
+FROM node:20-alpine AS builder
+WORKDIR /usr/src/app
+COPY package*.json ./
+RUN npm ci
+COPY . .
+RUN npm run build
+
+FROM node:20-alpine
+ENV NODE_ENV=production
+WORKDIR /usr/src/app
+COPY --from=builder /usr/src/app/package*.json ./
+COPY --from=builder /usr/src/app/node_modules ./node_modules
+COPY --from=builder /usr/src/app/dist ./dist
+USER node
+EXPOSE 3000
+CMD ["node", "dist/index.js"]
+
+
+
+#!/bin/bash
+df -h
+uptime
+free -m
+ss -tulnp
+du -sh .
+ps aux
+ps -ef
+pidof nginx
+kill -9 
+jobs
+mpstat -P ALL 1
+lsof -i :80
+ss -tunlp
+ss -tlnp sport = :80
+
