@@ -1,0 +1,105 @@
+---
+- name: install and configure nginx
+  hosts: web-server
+  become: yes
+  tasks:
+    - name: install nginx
+      yum:
+        name: nginx
+        state: present
+    - name: configure nginx
+      template:
+        src: nginx.conf.j2
+        dest: /etc/nginx/nginx.conf
+    - name: start nginx service
+      service: 
+        name: nginx
+        stated: started
+        enabled: yes
+
+
+
+
+resource "aws_security_group" "devops-sg" {
+  name           = "devops-sg_security_group"
+  description    = "Allow SSH and HTTP"
+  ingress {
+    from_port    = 22
+    to_port      = 22
+    protocol     = "tcp"
+    cidr_block   = ["0.0.0.0/0"]
+  }  
+  ingress {
+    from_port    = 80
+    to_port      = 80
+    protocol     = "tcp"
+    cidr_block   = ["0.0.0.0/0"]
+  }
+  ingress {
+    from_port    = 443
+    to_port      = 443
+    protocol     = "tcp"
+    cidr_block   = ["0.0.0.0/0"]
+  }
+  egress {
+    from_port    = 0
+    to_port      = 0
+    protocol     = "-1"
+    cidr_block   = ["0.0.0.0/0"]
+  }
+]
+
+
+
+pipeline {
+    agent webe-server
+    stage {
+        stage('Build') {
+            steps {   
+                echo 'Building project'
+            }       
+        }
+        stage('Test') {
+            steps {
+                echo 'Testing run'
+            }
+        }
+        stge('deploy') {
+            steps {
+                echo 'deploying application'
+            } 
+        }
+    }
+}
+
+
+
+
+
+
+
+stages:
+  - bulld:
+  - test:
+  - deploy
+build:
+  stage: build
+  script:
+    - echo "Building project"
+test:
+  stage: test
+  script:
+    - echo "Running test"  
+deploy:
+  stage: deploy
+  script:
+    - echo "deploying application"
+
+
+
+
+
+FROM ubuntu:24.04
+RUN apt update && apt install apache2 -y
+RUN echo "Hello Devops" > /var/www/html/index.html
+CMD ["apachectl", "-D", "FOREGROUND"]
