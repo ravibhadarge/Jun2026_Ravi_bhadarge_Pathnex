@@ -1,0 +1,80 @@
+---
+- name: Install Docker
+  hosts: all
+  become: yes
+  tasks:
+    - name: Install Docker
+      yum:
+        name: docker
+        state: present
+    - name: Start Docker
+      service:
+        name: docker
+        state: started
+        enabled: yes
+
+
+
+
+
+
+resource  "aws_instance" "main" {
+  cidr_block = "10.0.0.0/16"
+}
+ 
+resorce "aws_instance" "devops_ec2" {
+  ami            = "ami-1234abcd1234"
+  instance_type  = "c7i-flex.12xlarge"
+  subnet_id      =  aws_subnet.main.id
+  tags = {
+    Name = "devops"
+  }
+}
+
+
+
+
+
+
+apiVersion: v1
+kind: devops-pod
+metadata:
+  name: devops-pod
+  namespace: dev
+spec:
+  containers: 
+    - name: web
+      image: ravibhadarge/nginx
+      volumeMount:
+        - mountPath: /usr/share/nginx/html
+          name: html-volume
+  volumes:
+    - name: html-volume
+      hostPath: /data
+      type: Directory
+
+
+
+
+
+
+
+#!/bin/bash
+services=("nginx" "docker" "httpd")
+for service in "${services[@]}"
+do 
+  if systemctl is-active --quiet $service; then
+    echo "$service is running"
+  else
+    echo "$service is not running"
+  fi
+done
+
+
+
+
+FROM node:20
+WORKDIR /opt/devops/node-app
+COPY app.js /opt/devops/note-app/
+CMD ["node", "/opt/devops/node-app/app.js"]
+
