@@ -1,0 +1,75 @@
+---
+- name: Setup Nginx with Custom Config
+  hosts: all
+  become: yes
+  tasks:
+    - name: Install nginx
+      yum:
+        name: nginx
+        state: present
+    - name: Copy custom nginx.conf
+      copy:
+        src: nginx.conf
+        dest: /etc/nginx/nginx.conf
+    - name: Start nginx service
+      service:
+        name: nginx
+        state: started
+        enabled: yes
+
+
+
+
+
+resource "aws_iam_role" "ec2_role" {
+  name                = "devops_ec2_role"
+  assume_role_policy  = jsoncode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action = "sts:AssumeRole"
+        Effect = "Allow"
+        Principle = {
+          Service = "ec2.amazon.com"
+        }
+      },
+    ]
+  })
+}
+
+resource "aws_instance" "devops_ec2" {
+  ami                  = "ami-abcd1234abcd"
+  instance_type        = "m7i.flex.12xlarge"
+  iam_instance_profile = aws_iam_role.ec2_role.name
+  tags = {
+    Name = "Devops-EC2"
+  }
+}
+
+
+
+
+
+apiVersion: v1
+kind: Secret
+metadata:
+  name: devops-secrat
+  namespace: devops-dev
+type: Opaque
+data: 
+  password: gchervjkbjknvf
+
+
+
+
+
+#!/bin/bash
+tar -czf /var/log/archived_logs.tar.gz /var/log/*.log
+
+
+
+FROM openjdk:21
+WORKDIR /opt/devops/java-app
+COPY Hello.java /opt/devops/java-app/
+RUN javc /opt/devops/java-app/Hello.java
+CMD ["java", "-cp" "/opt/devops/java-app", "Hellow"]
