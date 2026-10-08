@@ -1,0 +1,121 @@
+---
+-  name: install docker compose
+   hosts: docker-server
+   become: yes
+   tasks:
+     - name: install dependancies
+       yum: 
+         name: "python-pip"
+         state: present
+     - name: install docker-compose
+       pip:
+         name: docker-compose 
+
+
+
+
+
+
+
+
+
+resource "aws_security_group" "allow_ssh_http" { 
+  name              = "Allow_SSH_http"
+  description       = "Allow SSH and HTTP access"
+  ingress {
+  from_port         = 22
+  to_port           = 22
+  protocol          = "tcp"
+  cidr_block        = "["0.0.0.0/0"]"
+  }
+  ingess {
+  from_port         = 80
+  to_port           = 80
+  protocol          = "tcp"
+  cidr_block        = ["0.0.0.0/0"]
+  }
+  egress {
+  from_port         = 0
+  to_port           = 0
+  protocol          = "-1"
+  cidr_block        = [0.0.0.0/0]
+  }
+}
+
+resource "aws_instance" "docker_ec2"
+  iam               = "abcd1234an=bcd1234"
+  instance_type     = "m7i.flex.8xlarge"
+  seurity_group     = [aws_security_group.allow_ssh_http.name]
+  ebs_block_device  {
+    device_name  = "/dev/sdh" 
+    volume_size  = 30
+  }
+}
+
+
+
+apiVersion: v1
+kind: Serice
+metadata:
+  name: devops-service
+  namespace: devops-dev
+spec:
+  type: NodePort
+  selector:
+    app: devops-app
+  ports:
+    - ptotocol: TCP
+      port: 80
+      nodeport: 32101
+
+
+
+
+pipeline {
+    agent devops-server
+    stages { 
+        stage('Build docker image') {
+            steps {
+                script {
+                    docker.build('dervops-app')
+                }
+            }
+        }
+        stage ('Push Docker Image to docker hub')
+            steps {
+                script {
+                    docker.withRegistry('https://docker.io', 'docker-credentials') {
+                        docker.image('devops-app').push('10.1.1')
+                    }
+                }
+            }
+        }
+    }
+}
+
+
+
+
+stage:
+  - build:
+  - push:
+build:
+  stage: build
+  script:
+    - docker build -t devops-app .
+push:
+  stage: push
+  script:
+    - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD"
+    - docker push devops-app
+ 
+
+
+
+
+FROM alpine:letest
+WORKDIR /opt/devops/alpine-app
+CMD ["echo", "Hellow Devops"]
+
+
+
