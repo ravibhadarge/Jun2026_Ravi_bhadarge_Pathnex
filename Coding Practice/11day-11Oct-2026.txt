@@ -1,0 +1,162 @@
+---
+- name: install helm
+  hosts: devops-server
+  become: yes
+  tasks:
+    - name: download helm
+      get_uri: 
+        url: https://get.helm.sh/hel-v3.7.0-linux-amd64.tar.gz
+        dest: /tmp/helm.tar.gz
+    - name: extract helm
+      unarchive:
+        src: /tmp/helm.tar.gz
+        dest: /usr/local/bin/
+        remote_src: yes
+    - name: set helm binary permission 
+      file: 
+        path: /usr/local/bin/helm
+        mode: '0755'
+
+
+
+
+
+
+
+resource "aws_eip" "devops_eip" {
+  instance =aws_instance.devops_ec2.id
+}
+
+resource "aws_instance" "devops_ce2" {
+  ami           = "ami-abcd132abnd1234"
+  instance_type = "c8i-flex.4xlarge"
+  }
+}
+
+
+
+
+
+
+
+pipeline {
+    agent any
+    environment {
+        IMAGE_NAME = "ravibhadarge/demo"
+    }
+    stages {
+        stage('Checkout') {
+            steps {
+                checkout scm
+            }
+        }
+        stage('Build') {
+            steps {
+                sh './gradlew clean build -x test'
+            }
+        }
+        stage('SonarQube') {
+            steps {
+                withSonarQubeEnv('SonarQube-Server') {
+                    sh './gradlew sonar'
+                }
+            }
+        }
+        stage('OWASP Dependency Check') {
+           steps {
+              sh '''
+              mkdir -p reports
+              /opt/dependency-check/bin/dependency-check.sh \
+              --noupdate \
+               --disableRetireJS \
+               --disableNodeJS \
+               --exclude "**/.git/**" \
+               --exclude "**/.gradle/**" \
+               --exclude "**/build/**" \
+               --scan build.gradle \
+               --format HTML \
+               --out reports
+               '''
+            }
+        }
+            steps {
+                sh 'snyk test'
+            }
+        }
+        stage('Docker Build') {
+            steps {
+                sh 'docker build -t ravibhadarge/demo:${BUILD_NUMBER} .'
+            }
+        }
+        stage('Trivy Scan') {
+            steps {
+                sh 'trivy image --severity HIGH,CRITICAL ravibhadarge/demo:${BUILD_NUMBER}'
+            }
+        }
+        stage('Docker Login') {
+            steps {
+                withCredentials([
+                    usernamePassword(
+                        credentialsId: 'dockerhub-login-credentials',
+                        usernameVariable: 'DOCKER_USER',
+                        passwordVariable: 'DOCKER_PASS'
+                    )
+                ]) {
+                    sh '''
+                    echo "$DOCKER_PASS" | docker login \
+                    -u "$DOCKER_USER" \
+                    --password-stdin
+                    '''
+                }
+            }
+        }
+        stage('Docker Push') {
+            steps {
+                sh 'docker push ravibhadarge/demo:${BUILD_NUMBER}'
+            }
+        }
+        stage('Deploy to Kubernetes') {
+            steps {
+                script {
+                    sh 'kubectl apply -f deployment.yaml'
+                }
+            }
+        }
+    }
+}
+
+
+
+
+
+
+
+stages:
+  - build 
+  - push 
+  - deploy 
+build:
+  stage: push
+  script: 
+    - docker build drvops-web-app .
+push: 
+  stage: 
+  script:
+    - docker login -u "CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD"
+    - docker push devops-web-app
+deploy:
+  stage: deploy
+  script:
+    - helm repo add stable https://chart.helm.sh/stable
+    - helm install devops-ngnix stable/nginx-ingress
+
+
+
+
+
+
+
+
+FROM nginx
+EXPOSE 80
+docker run -d -p 8080:80 nginx
