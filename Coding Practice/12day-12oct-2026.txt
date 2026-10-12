@@ -1,0 +1,124 @@
+---
+- name: setup auto scaling 
+  hosts: devops-server
+  become: yes
+  tasks:
+    - name: create configuration 
+      ec2_asg:
+        name: devops-asg
+        region: us-east-1
+        launch_config_name: devops-launch-config
+        min_size: 1
+        max_size: 3
+        desired_capacity: 2
+        vpc_zone_identifier: subnet-1234567890
+
+
+
+
+
+
+resource "aws_lb" "devops_lb"
+  name               = "devops-lb"
+  internal           = "false"
+  load_balancer_type = "application"
+  security_groups    = [aws_security_group.allow_ssh_http.id]
+  subnets            = [aws_subnet.public.id]
+}
+resource "aws_instance" "devops-ec2" {
+  ami                  = "ami-aabcd1234abcd"
+  instance_type        = "m7i-flex-8xlarge"
+  security_group       = [aws_security_group.allow_ssh_http.name]
+  tags = {
+    Name = "devops-EC2"
+  }
+}
+
+
+
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: devops-web-app
+  namespace: devops-dev
+spec:
+  replicas: 6 
+  selector:
+      match:Labels: 
+        app: devops-web-app
+  template:
+    metadata: 
+      labels:
+        app: devops-web-app
+    spec:
+      containers:
+        - name: web
+          image: ravibhadrge/nginx
+          ports:
+            - containersPort: 80
+---
+apiVersion: autoscaling/v2  
+kind: HorizontalPodAutoscaler
+metadata:
+  name: devops-web-app-hpa
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: devops-web-app
+  minReplicas: 4
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 70
+
+
+
+
+
+
+pipeline {
+    agent any
+    stages {
+        stage('Build & Test') {
+            parallel {
+                stage('Build') {
+                    steps {
+                        echo 'building project...'
+                    }
+                }
+                stage('Test') {
+                    steps {
+                        echo 'running tests...'
+                    }
+                }
+            }
+        }
+        stage('Deploy') {
+            steps {
+                echo 'deploying project...'
+            }
+        }
+    }
+}
+
+
+
+
+
+
+stages:
+  - build
+  - test
+  - deploy
+build:
+  stage: build
+  script:
+    - docker build -t devops-web-app .
+test:
+  stage: test
+  script:
+    - docker run devops-web-app npm test
+deploy:
+  stage: deploy
+  script:
+    - kubectl apply -f kubernetes/deployment.yaml
