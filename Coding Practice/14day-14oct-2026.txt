@@ -1,0 +1,120 @@
+--- 
+- name: deploy a application on multiple host
+  hosts: webserver
+  become: yes
+  tasks:   
+    - name: copy web app file 
+      copy:
+        src: /var/www/web/app/
+        dest: /var/www/html
+    - name: start web app service
+      service:
+        name: apache2
+        state: started
+        enable: yes
+
+
+
+
+
+resource "aws_lb" "devops-lb" {
+  name               = "devops-lb"
+  internal           = false
+  load_balancer_type = "application"
+  security_group     = [aws_security_group.allow_ssh__http.id]
+  subnets            = [aws_subnet.public.id]
+}
+resource "aws_instance" "devops_ec2" {
+  ami                = "ami-abcd1234abcd123"
+  instance_type      = "c8i-flex.12xlarge"
+  security_group     = [aws_security_group.allow_ssh_http.name]
+  tags = {
+    Name = "Devops-EC2"
+  }
+}
+
+
+
+
+
+helm install devops-redis bitnami/redis --set permission.enabled=true --set persistence.size=8Gi
+
+
+
+
+
+pipeline {
+    agent devops 
+    ENVIRONMENT {
+        IMAGE_NAME = 'devops-web-app'
+        DEPLOY_ENV = 'production'
+
+    }
+    stages {
+        stage(Build) {
+            steps {
+                echo 'Buildiong docker image'
+                docker.build("${env.IMAGE_NAME}")
+            }
+        }
+        stage('Test') {
+            steps {
+                echo 'Running test'
+            }
+        }
+        stage('Deploy to k8s')
+            steps {
+                script {
+                    if (env.DEPLOY_ENV == 'production') {
+                        sh 'kubectl apply -f kubernate/prod-depoyment.yml'
+                    } else {
+                        sh 'kubectl aply -f kubernate/dev-deployment.yml'
+                    }
+                }
+            }
+        }
+    }
+}
+
+
+
+
+
+
+
+
+
+
+stages:
+  - build 
+  - push
+  - deploy
+build: 
+  stage: build
+  script:
+    - docker build - t devops-web-app .
+push:
+  stage: deploy
+  script: 
+    - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD"
+    - docker push devops-web-app
+deploy:
+  stage: deploy
+  script:
+    - |
+      if [ "$CI_COMMIT_REF_NAME" == "main"]
+        kubectl apply -f kubernate/prod-deployment.yml
+      else
+        kubectl apply -f kubernate/dev-deployment.yml
+      fi
+
+
+
+
+
+
+FROM ubuntu
+RUN apt update && \
+    apt update curl -y && \
+    apt install vim -y
+CMD ["echo", "Hellow Devops"]
