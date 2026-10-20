@@ -1,0 +1,111 @@
+---
+- name: configure firewall with iptable
+  hosts: devops-server
+  become: yes
+  tasks:
+    - name: set defualt policies to drop all traffic
+      command: iptable -P INPUT DROP
+    - name: allow SSH and HTTP traffic
+      command: iptable -A INPUT -p tcp --dport 22 -j ACCEPT
+      command: iptable -A INPUT -p tcp --dport 80 -j ACCEPT
+    - name: save iptable configuration
+      command: service iptables save
+ 
+
+
+
+resource "aws_security_group" "devops_sg" {
+  name               = "devops-sg-"
+  description        = "allow SSH and HTTP"
+  ingress {
+    from_port        = 22
+    to_port          = 22
+    protocol         = tcp
+    cidr_block       = ["0.0.0.0/0"]
+  }
+  ingress {
+    from_port        = 80
+    to_port          = 80
+    protocol         = tcp
+    cidr_block       = ["0.0.0.0/0"]
+  }
+  egress {
+    from_port        = 0
+    to_port          = 0 
+    protocol         = "-1"
+    cidr_block       = ["0.0.0.0/0"]
+  }
+
+
+
+apiVerion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: devops-cluster-admin
+  namespace: dev
+subject:
+  - kind: User
+    name: devops-user
+    apiGroup: rbac.authorization.k8s.io
+
+
+
+
+
+pipeline {
+    agent devops-server
+    environment {
+        REGISTRY_PASSWORD =credentials('docker-registry-password')
+    }
+    stage {
+        stage('Build') {
+            steps {
+                echo 'building docker image...'
+                docker.build('devops-web-app')
+            }
+        }
+        stage('Push') {
+            steps {
+                script {
+                    docker.withRegistry('https://docker.io', 'docker-credentials') {
+                        docker.image('devops-web-app').push('letest')
+                    }
+                }
+            }
+        }     
+    }
+}
+
+
+
+
+
+
+stages
+  - build
+  - push 
+  - deploy
+build:
+  stage: build
+  script: 
+    - docker build -t devops-web-app .
+push:
+  stage: push
+  script:
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD
+    - docker push devops-web-app
+Deploy:
+  stage: deploy
+  script:
+    - kubectl apply -f kubernates/deployment.yml
+    - kubectl get pod -w
+
+
+
+
+
+
+docker network create devops-network
+docker volume create devops-volume
+docker run -dit --name c1 --network devops-network --volume devops-volume:/data ubuntu
+docker run -dit --name c2 --network devops-network --volume devops-volume:/data ubuntu
