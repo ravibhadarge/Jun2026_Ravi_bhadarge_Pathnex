@@ -1,0 +1,142 @@
+--- 
+- name:  seup prometheus node exporter
+  hosts: all
+  become: yes
+  tasks:
+    - name: install prometheus node exporter
+      yum:
+        name: prometheus-node-exporter
+        stage: present
+    - name: start node exporter
+      service: 
+        name: prometheus-node-exporter
+        state: started
+        enabled: yes
+
+
+
+resource "aws_cloudwatch_metric_alarm" "devops_cpu_alarm" {
+  alarm_name                    = "devops-cpu-alarm-utlizatio-high"
+  comparison_operator           = "GreaterThenThrshold"
+  evaluation_periods            = "1"
+  metric_name                   = "CPUUtilazation"
+  namespace                     = "AWS/EC2"
+  statistic                     = "average"
+  threshold                     = "80"
+  dimensions = {
+    InstanceId =aws_instance.devops_ec2.id
+  }
+  alarm_actions = [aws_sns_topic.devops_alarts.arn]
+}
+resorce "aws_sns_topic" "devops_alerts" {
+  name = "devops-alaers"
+}
+
+
+
+
+
+
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: prometheus
+  namespace: monitoring
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: prometheus
+  templatte:
+    metadata:
+      labels:
+        app: monitoring
+    spec:
+      containers:
+        - name: prometheus
+          image: prom/prometheus:v3.8.0
+          ports: 
+            - contanerPort:9090
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: grafana
+  namespace: monitoring
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: grafana
+  template:
+    metadata:
+      labels:
+        app: grafana
+    spec:
+      containers:
+        - name: grafana
+          image: grafana/grafana:12.3.0
+          ports:
+            - containerPort: 3000            
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: grafana
+  namespace: monitoring
+spec:
+  type: ClusterIP
+  selector:
+    app: grafana
+  ports:
+    - port: 3000
+      targetPort: 3000
+
+
+
+
+
+
+
+
+
+
+
+
+
+pipeline {
+    agent any
+    stages {
+        stage('Monitor') {
+            steps {
+                script {
+                    echo 'triggering cloudWatch alarms if CPU exceeds 80%'
+                    sh 'aws cloudwatch put-metric-data --namespace "AWS/EC2" --metric-name "CPUUtilization" --value 90'
+                }
+            }
+        }
+        stage('Test') {
+            steps {
+                echo 'Running tests...'
+            }
+        }
+    }
+}
+
+
+
+stsges:
+  - monitor
+  - test
+monitor:
+  stage: monitor
+  script:
+    - aws cloudwatch put-metric-data --namespace "AWS/EC2" --metric-name "CPUUtilization" --value 90
+test:
+  stage: test
+  script: 
+    - echo "running test" 
+
+
+
