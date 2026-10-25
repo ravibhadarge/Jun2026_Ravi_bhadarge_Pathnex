@@ -1,0 +1,161 @@
+---
+- name: deploy nginx across multiple k8s cluster
+  hosts: localhost
+  become: yes
+  tasks: 
+    - name: configure kubectl for cluster 1
+      command: kubectl --contex=us-east config use-context us-east-cluster
+    - name: deploy nginx on cluster 1
+      command: kubectl apply -f kubernates/deployment.yml
+    - name: configure kubectl for cluster 2
+      command: kubectl --context=us-west config use-context us-west-cluster
+    - name: deploy nginx on cluster 2
+      command: kubectl apply -f kubernates/deployment.yml
+      
+
+
+
+
+resource "aws_eks_cluster" "devops_eks" {
+  name        = "devops-eks-cluster" 
+  role_arn    = aws_iam_role.eks_cluster_role.arn
+  vpc_config {
+    subnet_ids = [aws_subnet.devops_devops_subnet.id]
+  }
+  depend_on = [aws_iam_role_policy_attachment.eks_cluster_role_policy]
+}
+
+resource "google_containet_cluster" "devops_gke" { 
+  name           = "devops-gke-cluster"
+  location       = "us-central1-a"
+  initial_node_count = 3
+  node_config {
+    machine_type = "n1-standard-1"
+  }
+}
+
+
+
+
+apiVersion: apps/v1
+kind: Deployment
+metadata: 
+  name: devops-deployment
+  namespace: dev
+spec: 
+  replicas: 5
+  selector:
+    matchLabels: 
+      app: devops-app
+  template:
+    metadata:
+      labels:   
+        app: devops-app
+    spec:
+      containers:
+        - name: nginx
+          image: ravibhadarge/nginx.v1
+          posts:
+            - contanersPort: 80
+---
+apiVersion: federation.k8s.io/v1beta1
+kind: FederatedDeployment
+metadata: 
+  name: devops-federated-deplolyment
+  namespce: default
+spec:
+  template:
+    spec: 
+      replicas: 3
+      selactor:  
+        matchLabels:
+          app: devops-app
+      template: 
+        metadata: 
+          labels:
+            app: devops-app
+        spec:
+          containers: 
+            - name: nginx
+              image: ravibhadarge/nginx-v1
+              ports:
+                - containerPort: 80
+
+
+pipeline {
+    agent jenkins-server
+    stages {
+        stage('deploy to cluster 1') { 
+            steps {
+                script {
+                     sh 'kubectl --context=us-east-cluster apply -f kubernates/deployment.yml'
+                }
+            }
+        }
+        stage('deploy to cluster 2') {
+            steps { 
+                script { 
+                     sh 'kubectl --context=us-west-cluster apply -f kubernates/deployment.yml'
+                }  
+            }
+        }
+    }
+}
+
+
+
+
+
+
+
+stages:
+  - deploy
+deploy_cluster_1:
+  stage: deploy
+  script: 
+    - kubectl --context=us-east-cluster apply -f kubernate/deployment.yml
+deploy_cluster_2:
+  stage: deploy
+  script:
+    - kubectl --context=us-east-cluster apply -f kubernate/deployment.yml
+
+
+
+
+version: '3'
+services:
+  db:
+    image: mysql:8
+    container_name: devops-db
+    environment: 
+      MYSQL_ROOT_PASSWORD: root
+   web:
+     image: nginx
+     container_name: devops-web
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
