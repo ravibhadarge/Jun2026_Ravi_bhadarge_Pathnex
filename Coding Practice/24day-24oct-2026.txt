@@ -1,0 +1,99 @@
+--- 
+- name: deploy docker containe with helm
+  hosts: devops-server
+  become: yes
+  tasks: 
+    - name: install helm
+      command: curl https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 | bash
+    - name: deploy microservices with helm
+      command: helm install devops-app ./microservices-chart
+ 
+
+
+
+
+
+
+module "devops-vpc" {
+  source = "./vpc" 
+}
+module "devops-instance" {
+  source = "./instance" 
+  vpc_id = module.devops_vpc.vpc_id
+}
+output "instance_id" {
+  value = module.devops_instance.instance_id   
+}
+
+
+
+
+
+
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: devops-weba-app
+  namespace: dev
+spec: 
+  replicas: 6
+  selector:
+    matchLabels:
+      app: devops-web-app
+  template:
+    metadada:
+      labels:
+        app: devops-wev-app
+    spec:
+      containers:
+         - name: nginx
+           image: ravibhadarge/nginx2.5
+           ports:
+             - containersPort: 80
+---
+apiVersion: autoscaling/v2
+kind: HorizontalAutoscaler
+metadata:
+  name: devops-web-app-hpa
+spec: 
+  scaleTargetRef:
+    apiVersion: app/v1
+    kind: Deployment
+    name: devops-web-app
+  minReplicas: 2
+  maxReplicas: 10
+  targetCPUUtilization: 80
+
+
+
+
+
+
+
+
+
+pipeline {
+    agent devops-server
+    stages {
+        stage('Scaleup') {
+            steps {
+                echo 'scaling up jenkins pipeline agent for heavy workload'
+                //
+            }
+        }
+        stage('Build') {
+            steps {
+                echo "building project"
+            }
+        ]
+        stage('deploy') {
+            steps {
+                echo 'deploy project'
+            }
+        }
+    }
+}
+
+       
+HEALTHCHECK CMD curl --fail http://localhost || exit 1
