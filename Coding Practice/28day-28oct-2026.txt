@@ -1,0 +1,47 @@
+
+- name: Setup VPC Peering Between Accounts
+  hosts: localhost
+  tasks:
+    - name: Create VPC peering connection
+      command: aws ec2 create-vpc-peering-connection --vpc-id vpc-1234567890 --peer-vpc-id vpc-0987654321
+
+
+
+
+resource "aws_vpc_peering_connection" "devops_peering" {
+  vpc_id      = aws_vpc.devops_vpc.id
+  peer_vpc_id = aws_vpc.peer_vpc.id
+}
+
+resource "aws_route" "devops_route" {
+  route_table_id         = aws_route_table.devops_rt.id
+  destination_cidr_block = "10.0.0.0/16"
+  vpc_peering_connection_id = aws_vpc_peering_connection.devops_peering.id
+}
+
+
+
+
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: devops-vpc-policy
+spec:
+  podSelector:
+      app: devops-app
+  ingress:
+    - from:
+
+
+
+
+docker load -i devops-nginx.tar
+
+
+docker run --rm -v devops-volume:/data -v $(pwd):/backup ubuntu tar czf /backup devops-backup.tar.gz /data
+docker save -o devops-nginx.tar devops-nginx
+
+        - podSelector:
+            matchLabels:
+              app: devops-db
+
