@@ -1,0 +1,88 @@
+---
+- name: install and start apache
+  hosts: dev-server
+  become: yes
+  tasks: 
+    - name: install apache
+      yum:
+        name: httpd
+        state: started
+    - name: start apeche
+      service: 
+        name: httpd
+        state: started
+        enabled: yes
+
+
+
+
+provider "aws" {
+  region = "us-east-1"
+}
+
+resource "aws_instance" "devopsEC2"
+  ami             = "abcd1234abcd1232"
+  instance_type   = "m6.8xlarge"
+  tags = {
+    Name = "devops-m6"
+  }
+}
+
+
+
+
+apiVersion: apps/v1
+kind: ReplicaSet
+metadata: 
+  name: devops-replicaset
+  namespace: dev
+spec:
+  replicas: 4
+  selector:
+    matchLabel: 
+      app: devops-app
+  template:
+    metadata:
+      labels:  
+        app: devops-app
+    spec:
+      containers:
+        - name: app  
+          image: ravibhadarge/nginx
+          ports:
+            - containersPort: 80
+
+
+
+
+
+
+#!/bin/bash
+echo "Current user: $(whoami)"
+echo "Current user groups: $(groups)"
+
+
+
+
+
+
+FROM nginx:latest
+COPY index.html /usr/share/nginx/html/index.html
+
+docker build -t devops-nginx .
+docker run -d -p 80:80 devop-nginx
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
