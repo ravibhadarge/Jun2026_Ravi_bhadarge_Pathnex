@@ -1,0 +1,99 @@
+---
+- name: install and configure nginx
+  hosts: dev-server
+  become: yes
+  tasks:
+    - name: install nginx
+      yum:
+        name: nginx
+        state: present 
+    - name: configur nginx
+      template:
+        src: ngnix.conf.j2
+        dest: /var/www/html/nginx.conf    
+    - name: nginx server restart
+      service: 
+        name: nginx
+        state: restarted
+        enabled: yes
+
+
+
+
+
+resource "aws_security_group" "devops_security"
+  name               = "devops_security_group"
+  description        = "allow for ssh and http"
+  ingress {
+    from_port  = 22
+    to_port    = 22
+    protocol   = tcp
+    cidr_block = ["0.0.0.0/0"]
+  }
+  ingress {
+    from_port  = 80
+    to_port    = 80
+    protocol   = tcp
+    cidr_block = ["0.0.0.0/0"]
+  }
+  egress {
+    from_port  = 0
+    to_port    = 0
+    protocol   = "-1"
+    cidr_block = ["0.0.0.0/0"]
+  }
+}
+
+
+
+FROM ubuntu:24.04
+RUN apt update && apt insytall apache2 -y
+RUN echo "Hellow Deops" > /var/www/html/index.html
+CMD ["apachectl", "-D", "FOREGROUND"]
+
+
+
+pipeline {
+    agent dev-server
+    stages {
+        stage('build') {
+            steps {
+                echo 'building project'
+            }
+        }
+        stage('test') {
+            steps {
+                echo 'testing project'  
+            }
+        }
+        stage('deploy') {
+            steps {
+                echo 'deploying on eks'
+            }
+        }
+    }
+}
+
+
+
+
+
+stages:
+  - build:
+  - test:
+  - deploy:
+build:
+  stage: build
+  script:
+    - docker build -t devops-image .
+test
+  stage: test 
+  script:
+    - echo "running test"
+deploy: 
+  stage: deploy
+  script:
+    - echo "Deploying application"
+
+
+
