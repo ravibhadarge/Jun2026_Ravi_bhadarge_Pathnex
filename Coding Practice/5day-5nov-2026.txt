@@ -1,0 +1,100 @@
+---
+- name: create a new user
+  hosts: all
+  become: yes
+  tasks:
+    - name: create user
+      user:
+        name: devops
+        state: present
+        shell: /bin/bash
+    - name: Set permissions for the user
+      file:
+        path: /home/devops
+        owner: devops
+        group: devops
+        mode: '0755'
+
+
+
+
+
+
+resource "aws_instance" "devopsEC2" {
+  ami           = "ami-abcd1234abcd1234"
+  instance_type = "m6.8xlarrge"
+
+  tags = {
+    Name = "devops-Server"
+  }
+
+  ebs_block_device {
+    device_name = "/dev/sdh"
+    volume_size = 50
+  }
+}
+
+
+
+
+pipeline {
+    agent any
+    stages {
+        stage('Clone') {
+            steps {
+                git 'https://github.com/ravibhadarge/sample-repo.git'
+            }
+        }
+        stage('Build') {
+            steps {
+                echo 'building project from Git repository'
+            }
+        }
+        stage('Test') {
+            steps {
+                echo 'running unit tests'
+            }
+        }
+        stage('Deploy') {
+            steps {
+                echo 'deploying application on eks'
+            }
+        }
+    }
+}
+
+
+
+
+stages:
+  - build:
+  - test:
+  - deploy
+build:
+  stage: build
+  script:
+    - docker build -t devops-app .
+push:
+  stage: push
+  script:
+    - dockee push devops-app
+deploy:
+  stage: deploy
+  script:
+    - kubectl apply -f kubernates/deployment.yml
+
+
+
+print("Hello Devops")
+
+
+FROM python:3.11
+WORKDIR: /opt/devops/devops-app
+COPY app.py /opt/devops/devops-app/
+CMD ["python", "/opt/devops/devops-app/app.py"]
+
+
+^G Hel
+
+
+
