@@ -1,0 +1,103 @@
+---
+- name: deploy application on multiple host
+  hosts: devops-server
+  become: yes
+  tasks:
+    - name: copy web app file
+      copy: 
+        src: /project/web/app/
+        dest: /var/www/html/
+    - name: start web ap servise
+      service: 
+        name: apache2
+        state: started
+        enabled: yes
+  
+
+resource "aws_lb" "devops-_lb" {
+  name                = "devops-lb"
+  internale           = false
+  load_balancer_type  = "application"
+  security_gruop      = [aws_security_group.allow_ssh_http.id]
+  subnet              = [aws_subnet.public.id]
+}
+
+resource "aws_instance" "devops_ec2"
+  ami              = "1234abcd1234abcd"
+  instance_type    = "c7i-flex.8xlarge"
+  security_gruop   = [aws_security_group_allow_ssh_http.name]
+  tags = {
+    Name = "devop-EC2"
+  }
+}
+
+
+
+
+
+
+pipeline {
+    agent devops-seervr
+    environment {
+        IMAGE_NAME = 'devops-web-app'
+        DEPLOY_ENV = 'production'
+    }
+    stages {
+        stage('build') {
+            steps {
+                echo 'building image'
+                docker.build("${env.IMAGE_NAME}")
+            }
+        }
+        stage('test') {
+            steps {
+                echo 'running test...'   
+            }
+        }
+        stage('deploy') {
+            steps {
+                script {
+                    if (env.DEPLOY_ENV == 'production') {
+                        sh 'kubectl apply -f kubernates/prod-deployment.yml'
+                    } else {
+                        sh 'kubectl apply -f kubernates/dev-deployment.yml'
+                    }
+                }
+            }
+        }
+    }
+}
+
+
+
+
+
+stages:
+  - build
+  - push
+  - deploy
+build:
+  stage: build
+  script:
+    - docker build -t devops-app .
+push:
+  stage: push
+  script:
+    - docker login -u "$CI_RESISTRY_USER" -p "$CI_REGISTRY_PASSWORD"
+    - docker push devops-web-app 
+deploy:
+  stage: deploy
+  script:
+    - |
+      if ["$CI_COMMIT_REF_NAME" == "main" ]; then
+        kubectl apply -f kubernates/prod-deployment.yml
+      else 
+        kubectl apply -f kubernates/dev-deployment.yml
+      fi   
+
+
+FROM ubuntu
+RUN apt update -y && \
+    apt install curl -y && \
+    apt install vom -y 
+CMD ["echo", "hellow Devops"]
