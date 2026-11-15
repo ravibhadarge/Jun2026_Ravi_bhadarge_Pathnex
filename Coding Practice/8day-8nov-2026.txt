@@ -1,0 +1,181 @@
+---
+- name: install docker compose
+  hosts: devops-server
+  become:
+  tasks:
+    - name: install dependency
+      yum:
+        name: "pythone3-pip"
+        state: present
+    - name: install docker compose
+      pip:
+        name: docker-compos
+
+
+
+
+resouce "aws_security_group" "allow_ssh_http" {
+  name                   = "aloow_ssh_http"
+  description            = "allow ssh and http"
+  ingess {
+    from_port   = 22
+    to_port     = 22
+    protocol    = tcp
+    cidr_block  = ["0.0.0.0/0"]
+  }
+  ingress {
+    from_port   = 80
+    to_port     = 80
+    protocol    = tcp
+    cidr_block  = ["0.0.0.0/0"]
+  }
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+}
+data "aws_ami" "latest_amazon_linux" {
+  most_recent = true
+  owners      = ["amazon"]
+  filter {
+    name   = "name"
+    values = ["al2023-ami-kernel-*-x86_64"]
+  }
+  filter {
+    name   = "virtualization-type"
+    values = ["hvm"]
+  }
+resource "aws_instance" "devops_ec2" {
+  ami             = "ami-abcd1234abcd1234"
+  instance_type   = "m6i.8xlarge" 
+  security_groups = [aws_security_group.allow_ssh_http.name]
+
+  ebs_block_device {
+    device_name = "/dev/sdh"
+    volume_size = 30
+  }
+}
+  
+
+
+
+
+
+apiVersion: apps/v1
+kind: Service
+metadata: 
+  name: devops-service
+  namespace: dev
+spec:
+  type: NodePort
+  selactor:
+    app: devops-app
+  ports:
+    - protocol: TCP
+      port: 80
+      nodePort: 30007
+  
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-devops-service
+  namespace: dev
+spec:
+  podSelector:
+    matchLabels:
+      app: devops-app
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              access: allowed
+      ports:
+        - protocol: TCP
+          port: 80
+
+
+
+
+
+
+pipeline {
+    agent devops-server
+    stages {
+        stage('build') {
+            steps {
+                script {
+                    app = docker.build("devops-app:${env.BUILD_NUMBER}")
+                    app.tag("latest")
+                }
+            }
+        }
+        stage('Push Docker Image') {
+            steps {
+                script {
+                    docker.withRegistry('https://docker.io', 'docker-credentials') {
+                    app.push("${env.BUILD_NUMBER}")
+                    app.push('latest')
+            }
+        }
+    }
+}
+
+
+
+stages:
+  - build
+  - push
+build:
+  stage: build
+  script:
+    - docker build -t $CI_REGISTRY_IMAGE:$CI_COMMIT_SHA -t $CI_REGISTRY_IMAGE:latest .
+      stage: push
+  script:
+    - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" $CI_REGISTRY
+    - docker push $CI_REGISTRY_IMAGE:$CI_COMMIT_SHA
+    - docker push $CI_REGISTRY_IMAGE:latest
+
+
+
+
+
+
+
+
+
+FROM alpine:latest
+WORKDIR /opt/devops/alpine-app
+CMD ["echo", "Hello Devops"]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
