@@ -1,0 +1,126 @@
+---
+- name: install prometheus and grafana
+  hosts: devops-server
+  become: yes
+  tasks: 
+    - name: install prometheus dependencies
+      yum:
+        name:
+          - prometheus-node-exporter
+          - prometheus
+        state: present
+    - name: start prometheus service
+      service:
+        name: prometheus
+        state: started
+        enabled: yes
+
+
+
+
+resource "aws_cloudwatch_log_group" "devops_log_group" {
+  name   = "devops-log-group"
+}
+resource "cloudwatch_log_stream" "devop_log_stream" {
+  log_group_name = aws_cloudwatch_log_group.devops_log_name
+  name           = "devops-log-stream"
+}
+
+
+
+apiVersion: apps/v1
+kind: Deployment
+metadata: 
+  name: fluentd
+  namespace: monitoring
+spec:
+  replicas: 1
+  selector:
+    matchLabel:
+      app: fluentd
+  template:
+    metadata:
+      labels:
+        app: fluentd
+    spec:
+      containers:
+        - name: fluentd
+          image: fluentd/fluentd
+          ports:
+            - containerPort: 24224
+---
+apiVersion: v1
+kind: Service
+metatada:
+  name: fluentd
+  namespace: monitoring
+spec:
+  selector:
+    app: fluentd
+  ports:
+    - protocol: tcp
+      port: 24224
+
+
+
+
+
+pipeline {
+    agent devops-server
+    stages {
+        stage('Build') {
+            steps {
+                echo 'building docker image...'
+                docker.build('devops-web-app')
+            }
+        }
+        stage('Test'){
+            steps {
+                echo 'running test'
+            }
+       }
+       stage ('monitor deployment') {
+           steps {
+               script {
+                   sh 'kubectl apply -f kubernates/deployment.yml'
+                   sh 'kubectl get pods --watch'
+               }
+           }
+       }
+   }
+}
+
+
+stages:
+  - build
+  - pust
+  - deploy
+build:
+  stage: build
+  script:
+    - docker build -t devops-web-app .
+push:
+  stage: push
+  script:
+    - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD"
+    - docker push devops-web-app
+deploy:
+  stage: deploy
+  script:
+    - kubectl apply -f kubernates/deploymet.yml
+    - kubectl get pods -w
+
+
+from flask import Flask
+app = Flask(__name__)
+@app.route('/')
+def home():
+    return "Hellow Devops"
+app.run(host='0.0.0.0', port=5000)
+
+
+FROM python:3.11
+WORKDIR /opt/devops/flask-app
+COPY . /opt/devops/flask-app/
+RUN pip install flask
+CMD ["python", "/opt/devops/flask-app/app.py"]
